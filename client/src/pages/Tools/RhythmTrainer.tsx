@@ -16,7 +16,7 @@ const RhythmTrainer: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-white overflow-hidden">
+    <div className=" w-full flex flex-col bg-white overflow-hidden">
        
        {/* Header - Fixed */}
        <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between flex-none shrink-0">
