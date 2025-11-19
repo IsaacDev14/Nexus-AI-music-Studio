@@ -6,7 +6,7 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-/* ========== CHORD & SONG ARRANGEMENT ========== */
+/* ==================== INTERFACES ==================== */
 export interface Chord {
   chord: string;
   duration: number;
@@ -48,7 +48,6 @@ export interface FullDisplayData {
   practiceTips: string[];
 }
 
-/* ========== BACKING TRACK GENERATOR ========== */
 export interface BackingTrackStep {
   beat: number;
   notes: string[];
@@ -70,21 +69,18 @@ export interface BackingTrackResult {
   description?: string;
 }
 
-/* ========== RHYTHM TRAINER ========== */
 export interface RhythmPatternResult {
   pattern: string;
   description?: string;
   difficulty?: string;
 }
 
-/* ========== MELODY GENERATOR ========== */
 export interface MelodySuggestionResult {
   melody: string;
   description?: string;
   style?: string;
 }
 
-/* ========== IMPROV ASSISTANT ========== */
 export interface ImprovTipsResult {
   response: string;
   scales?: string[];
@@ -92,14 +88,12 @@ export interface ImprovTipsResult {
   techniques?: string[];
 }
 
-/* ========== SONGWRITER (LYRICS) ========== */
 export interface LyricsResult {
   lyrics: string;
   title?: string;
   structure?: string;
 }
 
-/* ========== PRACTICE LOG + AI COACH ========== */
 export interface Session {
   id: string;
   date: string;
@@ -115,12 +109,19 @@ export interface PracticeAdviceResult {
   nextGoals?: string[];
 }
 
-/* ========== API METHODS ========== */
+// NEW: Lesson Generator
+export interface LessonResult {
+  lesson: string;
+  title?: string;
+  duration?: string;
+  goals?: string[];
+}
+
+/* ==================== API METHODS ==================== */
 export const aiApi = {
   generateSongArrangement: async (query: any): Promise<FullDisplayData> => {
     const res = await api.post('/ai/chords', query);
     const data = res.data;
-
     const rawProgression =
       data.progression ||
       data.progressionSummary?.map((c: string) => ({ chord: c, duration: 4 })) ||
@@ -132,7 +133,7 @@ export const aiApi = {
       key: data.key || 'C Major',
       tuning: data.tuning || 'E A D G B E',
       capo: data.capoFret > 0 ? `Capo on fret ${data.capoFret}` : undefined,
-      progression: Array.isArray(rawProgression) ? rawProgression : [], // ← FIXED HERE
+      progression: Array.isArray(rawProgression) ? rawProgression : [],
       tablature: Array.isArray(data.tablature) ? data.tablature : [],
       chordDiagrams: Array.isArray(data.chordDiagrams) ? data.chordDiagrams : [],
       substitutions: Array.isArray(data.substitutions) ? data.substitutions : [],
@@ -169,9 +170,25 @@ export const aiApi = {
     const res = await api.post<PracticeAdviceResult>('/ai/practice-advice', { sessions });
     return res.data.advice || 'Keep up the great work! Consistency is key.';
   },
+
+  // REAL AI LESSON GENERATOR
+  generateLesson: async (params: {
+    skillLevel: string;
+    instrument: string;
+    focus: string;
+  }): Promise<string> => {
+    return api
+      .post<LessonResult>('/ai/lesson', {
+        skill_level: params.skillLevel,
+        instrument: params.instrument,
+        focus: params.focus,
+      })
+      .then(res => res.data.lesson)
+      .catch(() => 'Error: Could not connect to AI server. Is your backend running?');
+  },
 };
 
-/* ========== DIRECT EXPORTS ========== */
+/* ==================== DIRECT EXPORTS ==================== */
 export const generateSongArrangement = aiApi.generateSongArrangement;
 export const generateBandArrangement = aiApi.generateBandArrangement;
 export const generateRhythmPattern = aiApi.generateRhythmPattern;
@@ -179,6 +196,8 @@ export const generateMelodySuggestion = aiApi.generateMelodySuggestion;
 export const getImprovTips = aiApi.getImprovTips;
 export const generateLyrics = aiApi.generateLyrics;
 export const getPracticeAdvice = aiApi.getPracticeAdvice;
+export const generateLesson = aiApi.generateLesson; // ← NOW FULLY WORKING
 
-/* ========== AXIOS INSTANCE ========== */
+
+/* ==================== AXIOS INSTANCE ==================== */
 export { api };
