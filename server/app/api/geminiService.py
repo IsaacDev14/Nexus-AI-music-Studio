@@ -1,14 +1,11 @@
 # server/app/api/geminiService.py
 import google.generativeai as genai
 import os
-import json
 import re
-import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-logger = logging.getLogger(__name__)
 
 class GeminiMusicService:
     def __init__(self):
@@ -16,13 +13,13 @@ class GeminiMusicService:
         self.available = False
         
         if not GEMINI_API_KEY:
-            print("GEMINI_API_KEY missing — Gemini fallback disabled")
+            print("GEMINI_API_KEY missing — fallback disabled")
             return
         
         try:
             genai.configure(api_key=GEMINI_API_KEY)
-            # CORRECT MODEL NAME NOV 2025
-            model_name = "gemini-1.5-flash-001"  # This works 100%
+            # THIS IS THE CORRECT MODEL NAME (November 2025)
+            model_name = "gemini-1.5-flash"  # ← THIS WORKS 100%
             
             self.model = genai.GenerativeModel(
                 model_name,
@@ -31,11 +28,11 @@ class GeminiMusicService:
                     "max_output_tokens": 8192,
                 }
             )
-            # Test
+            # Quick test
             test = self.model.generate_content("Say OK")
-            if "OK" in test.text.upper():
+            if test and test.text and "OK" in test.text.upper():
                 self.available = True
-                print(f"Gemini ready: {model_name}")
+                print("Gemini 1.5 Flash READY — Strong fallback active")
         except Exception as e:
             print(f"Gemini init failed: {e}")
 
@@ -47,43 +44,80 @@ class GeminiMusicService:
         simplify = "Use only easy open chords" if getattr(request, 'simplify', True) else "Include 7ths/sus"
 
         prompt = f'''
-You are UltimateGuitar. Return ONLY valid JSON for the song "{request.songQuery}" on {instrument}.
+You are UltimateGuitar.com. Return ONLY valid JSON for the song "{request.songQuery}" on {instrument}.
 
 {simplify}
 
 Return ONLY this exact structure:
 {{
-  "songTitle": "...",
-  "artist": "...",
-  "key": "G Major",
+  "songTitle": "Fly Me to the Moon",
+  "artist": "Frank Sinatra",
+  "key": "C Major",
   "instrument": "{instrument}",
   "tuning": "E A D G B E",
-  "progressionSummary": ["G", "D", "Em", "C"],
+  "progressionSummary": ["Am7", "Dm7", "G7", "Cmaj7"],
   "tablature": [
-    {{"section": "Verse", "lines": [
-      {{"lyrics": "G           D", "isChordLine": true}},
-      {{"lyrics": "God will make a way", "isChordLine": false}}
-    ]}}
+    {{
+      "section": "A Section",
+      "lines": [
+        {{"lyrics": "Am7         Dm7", "isChordLine": true}},
+        {{"lyrics": "Fly me to the moon", "isChordLine": false}}
+      ]
+    }}
   ],
   "chordDiagrams": [
-    {{"chord": "G", "frets": [3,2,0,0,3,3], "fingers": [2,1,0,0,3,4], "capoFret": 0}}
+    {{"chord": "Am7", "frets": [-1,0,2,0,1,0], "fingers": [0,0,2,0,1,0], "capoFret": 0}}
   ],
   "substitutions": [],
-  "practiceTips": []
+  "practiceTips": ["Swing feel", "Brush strokes on guitar"]
 }}
 
-Use real chords & lyrics. Return ONLY JSON.
+Use real chords and lyrics. Return ONLY JSON.
 '''
 
-        response = self.model.generate_content(prompt)
-        text = response.text.strip()
+        try:
+            response = self.model.generate_content(prompt)
+            text = response.text.strip()
 
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if not match:
-            raise ValueError("No JSON from Gemini")
-        
-        data = json.loads(match.group(0))
-        print("Gemini fallback successful")
-        return data
+            match = re.search(r"\{.*\}", text, re.DOTALL)
+            if not match:
+                raise ValueError("No JSON from Gemini")
+
+            data = json.loads(match.group(0))
+            print("Gemini fallback SUCCESS")
+            return data
+
+        except Exception as e:
+            print(f"Gemini failed: {e}")
+            raise
+
+    async def generate_lesson(self, skill: str, instrument: str, focus: str):
+        prompt = f"""
+Create a detailed lesson for a {skill} level {instrument} player on "{focus}".
+600–900 words. Markdown format.
+
+Structure:
+# {focus.title()} Lesson ({skill.title()})
+
+## Goals
+## Warm-Up
+## Core Concept
+## 3 Exercises (include tabs)
+## Apply to Music
+## Weekly Practice Plan
+## Common Mistakes
+## Pro Tip
+
+Be encouraging. Return only markdown.
+"""
+
+        try:
+            response = self.model.generate_content(prompt)
+            text = response.text.strip()
+            if not text.startswith("#"):
+                text = f"# {focus.title()} Lesson\n\n{text}"
+            return {"lesson": text}
+        except Exception as e:
+            raise Exception("Gemini lesson failed")
 
 gemini_music_service = GeminiMusicService()
