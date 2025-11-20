@@ -1,6 +1,6 @@
 # server/app/schemas.py
 from pydantic import BaseModel, Field
-from typing import List, Union, Literal, Optional
+from typing import List, Optional, Union, Literal
 
 # --- Tablature ---
 class TabLine(BaseModel):
@@ -65,35 +65,43 @@ class BackingTrackResult(BaseModel):
     youtubeQueries: Optional[List[str]] = None
     description: Optional[str] = None
 
-# --- Other Features ---
+# --- Rhythm ---
 class RhythmPatternResult(BaseModel):
-    pattern: str
-    description: Optional[str] = None
-    difficulty: Optional[str] = None
+    name: str
+    timeSignature: str
+    description: str
+    pattern: List[dict]
 
+# --- Melody ---
 class MelodySuggestionResult(BaseModel):
-    melody: str
-    description: Optional[str] = None
-    style: Optional[str] = None
+    scale: str
+    key: str
+    notes: List[str]
+    intervals: List[str]
+    suggestion: str
 
+# --- Improv ---
 class ImprovTipsResult(BaseModel):
-    response: str
-    scales: Optional[List[str]] = None
-    targetNotes: Optional[List[str]] = None
-    techniques: Optional[List[str]] = None
+    style: str
+    recommendedScales: List[str]
+    tips: List[str]
+    backingTrackSearch: str
 
+# --- Lyrics ---
 class LyricsResult(BaseModel):
+    title: str
+    structure: List[str]
     lyrics: str
-    title: Optional[str] = None
-    structure: Optional[str] = None
 
+# --- Practice Advice ---
 class PracticeAdviceResult(BaseModel):
-    advice: str
-    insights: Optional[List[str]] = None
-    nextGoals: Optional[List[str]] = None
+    insight: str
+    recommendation: str
+    focusArea: str
 
+# --- Lesson ---
 class LessonResult(BaseModel):
+    title: str
     lesson: str
-    title: Optional[str] = None
-    duration: Optional[str] = None
-    goals: Optional[List[str]] = None
+    duration: str
+    goals: List[str]

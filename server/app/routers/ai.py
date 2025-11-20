@@ -1,3 +1,4 @@
+# server/app/routers/ai.py
 from fastapi import APIRouter, HTTPException
 from app.api.grokService import grok_service
 from app.api.geminiService import gemini_music_service
@@ -17,9 +18,6 @@ router = APIRouter(prefix="/ai")
 
 
 async def _try_gemini_first(gemini_func, grok_func, *args):
-    """
-    Try Gemini first → fall back to Grok on any error
-    """
     if gemini_music_service.available:
         try:
             print("→ Trying Gemini...")
@@ -39,8 +37,6 @@ async def _try_gemini_first(gemini_func, grok_func, *args):
 
 @router.post("/chords", response_model=FullSongArrangement)
 async def generate_song_arrangement(request: ChordProgressionRequest):
-    print(f"Song query: {request.songQuery}")
-
     async def gemini_call(req):
         return await gemini_music_service.generateSongArrangement(req)
 
@@ -87,15 +83,7 @@ async def generate_melody(data: dict):
 
     async def gemini_call(k, s):
         result = await gemini_music_service.generate_melody(k, s)
-
-        # Ensure required response_model fields exist
-        melody_text = " ".join(result.get("notes", []))
-
-        return MelodySuggestionResult(
-            melody=melody_text,
-            description=result.get("suggestion", ""),
-            style=result.get("key", "")
-        )
+        return MelodySuggestionResult(**result)
 
     return await _try_gemini_first(
         gemini_call,
@@ -109,7 +97,8 @@ async def get_improv_tips(data: dict):
     query = data["query"]
 
     async def gemini_call(q):
-        return await gemini_music_service.generate_improv_tips(q)
+        result = await gemini_music_service.generate_improv_tips(q)
+        return ImprovTipsResult(**result)
 
     return await _try_gemini_first(
         gemini_call,
@@ -125,7 +114,8 @@ async def generate_lyrics(data: dict):
     mood = data["mood"]
 
     async def gemini_call(t, g, m):
-        return await gemini_music_service.generate_lyrics(t, g, m)
+        result = await gemini_music_service.generate_lyrics(t, g, m)
+        return LyricsResult(**result)
 
     return await _try_gemini_first(
         gemini_call,
@@ -139,7 +129,8 @@ async def get_practice_advice(data: dict):
     sessions = data["sessions"]
 
     async def gemini_call(s):
-        return await gemini_music_service.get_practice_advice(s)
+        result = await gemini_music_service.get_practice_advice(s)
+        return PracticeAdviceResult(**result)
 
     return await _try_gemini_first(
         gemini_call,
@@ -154,10 +145,9 @@ async def generate_lesson(data: dict):
     instrument = data["instrument"]
     focus = data["focus"]
 
-    print(f"Lesson → Skill:{skill}, Instrument:{instrument}, Focus:{focus}")
-
     async def gemini_call(sk, inst, f):
-        return await gemini_music_service.generate_lesson(sk, inst, f)
+        result = await gemini_music_service.generate_lesson(sk, inst, f)
+        return LessonResult(**result)
 
     return await _try_gemini_first(
         gemini_call,

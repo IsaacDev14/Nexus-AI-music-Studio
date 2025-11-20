@@ -18,7 +18,7 @@ const Songwriter: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row bg-gray-50 overflow-hidden">
+    <div className="h-full w-screen flex flex-col md:flex-row bg-gray-50 overflow-hidden">
       {/* Left Control Panel */}
       <div className="w-full md:w-96 bg-white border-r border-gray-200 p-6 flex flex-col overflow-y-auto z-10 shadow-xl">
         <div className="mb-8">
