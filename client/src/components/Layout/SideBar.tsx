@@ -91,10 +91,16 @@ const SideBar = () => {
   return (
     <div className="w-64 h-full bg-white border-r border-gray-200 overflow-y-auto">
       {/* Simple Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <MusicalNoteIcon className="w-5 h-5 text-gray-700" />
-          <span className="font-semibold text-gray-900">AI Music Studio</span>
+      <div className="p-6 pb-6 border-b border-gray-200 dark:border-slate-900">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-white dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-800 flex items-center justify-center shadow-inner relative overflow-hidden">
+            <div className="absolute inset-0 bg-indigo-500/10 dark:bg-cyan-500/10 animate-pulse"></div>
+            <CpuChipIcon className="w-5 h-5 text-indigo-600 dark:text-cyan-500 relative z-10" />
+          </div>
+          <div>
+             <div className="font-bold text-sm tracking-tight text-gray-900">NEXUS STUDIO</div>
+             <div className="text-[10px] text-indigo-500 dark:text-cyan-500 font-mono">AI SYSTEM ONLINE</div>
+          </div>
         </div>
       </div>
 
