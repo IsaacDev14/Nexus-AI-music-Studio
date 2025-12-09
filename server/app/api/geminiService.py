@@ -4,11 +4,11 @@ import json
 import asyncio
 from dotenv import load_dotenv
 import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # Load environment variables
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
 
 class GeminiMusicService:
     def __init__(self):
@@ -22,28 +22,61 @@ class GeminiMusicService:
         try:
             genai.configure(api_key=GEMINI_API_KEY)
 
-            # Using Gemini 2.0 Flash
-            self.model = genai.GenerativeModel('gemini-2.0-flash')
+            # Configuration: Low temperature for consistent JSON
+            generation_config = {
+                "temperature": 0.3,
+                "top_p": 0.95,
+                "top_k": 40,
+                "max_output_tokens": 8192,
+                "response_mime_type": "application/json",
+            }
 
-            # Connectivity test
-            test_response = self.model.generate_content("Test connection. Reply with 'OK'.")
-            if test_response and hasattr(test_response, 'text') and test_response.text.strip() == "OK":
-                self.available = True
-                print("✓ Gemini 2.0 Flash Connected Successfully")
-            else:
-                print("❌ Gemini connection test failed.")
+            # Safety settings
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+            }
+
+            # System Instruction: Define the persona and strict JSON rules
+            system_instruction = (
+                "You are an expert music teacher and producer. "
+                "You strictly output valid JSON data. "
+                "Do not include markdown formatting (like ```json) in the response. "
+                "When writing long text inside JSON, always use \\n for new lines, never actual line breaks."
+            )
+
+            # Initialize Gemini 2.5 Flash
+            self.model = genai.GenerativeModel(
+                model_name='gemini-2.5-flash',
+                generation_config=generation_config,
+                safety_settings=safety_settings,
+                system_instruction=system_instruction
+            )
+
+            # Sync connectivity test
+            try:
+                test_response = self.model.generate_content("Reply with this JSON: {\"status\": \"OK\"}")
+                if test_response and test_response.text:
+                    self.available = True
+                    print(f"✓ Connected to {self.model.model_name} successfully.")
+                else:
+                    print(f"❌ Gemini connection test failed: No response text.")
+            except Exception as conn_err:
+                 print(f"❌ Gemini connection test failed: {conn_err}")
+
         except Exception as e:
             print(f"❌ Gemini initialization error: {e}")
 
     async def _generate_json(self, prompt: str) -> dict:
         """Send prompt to Gemini API and parse JSON reliably."""
-        if not self.available:
+        if not self.available or not self.model:
             raise Exception("Gemini API is not available. Check your API Key.")
 
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+            # Run blocking generate_content in a thread
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
             )
 
             if not response or not getattr(response, 'text', None):
@@ -51,22 +84,40 @@ class GeminiMusicService:
 
             text = response.text.strip()
 
+            # --- CLEANING PHASE ---
+            # 1. Remove Markdown code blocks (```json ... ```)
+            text = re.sub(r"^```json\s*", "", text)
+            text = re.sub(r"^```\s*", "", text)
+            text = re.sub(r"\s*```$", "", text)
+
+            # 2. Attempt Parse
             try:
-                data = json.loads(text)
+                # strict=False allows control characters inside strings
+                data = json.loads(text, strict=False)
             except json.JSONDecodeError:
-                # Attempt to extract JSON if extra text exists
+                # --- RECOVERY PHASE ---
                 match = re.search(r"\{.*\}", text, re.DOTALL)
                 if match:
-                    data = json.loads(match.group(0))
+                    json_str = match.group(0)
+                    try:
+                        data = json.loads(json_str, strict=False)
+                    except json.JSONDecodeError:
+                        # "Nuclear" option: Replace actual newlines with \n just to get it to parse
+                        clean_str = json_str.replace('\n', '\\n').replace('\r', '')
+                        try:
+                            data = json.loads(clean_str, strict=False)
+                        except Exception:
+                            print(f"FAILED JSON RAW: {text}") # Log raw for debugging
+                            raise ValueError(f"Could not parse JSON even after cleaning.")
                 else:
-                    raise ValueError(f"Could not parse JSON: {text[:200]}...")
+                    raise ValueError(f"Could not find JSON object in response.")
 
             # Unwrap list if needed
             if isinstance(data, list):
                 if len(data) > 0:
                     return data[0]
                 else:
-                    raise ValueError("Gemini returned an empty list.")
+                    return {} 
 
             return data
 
@@ -83,10 +134,10 @@ class GeminiMusicService:
         simplify = "Use only easy open chords" if getattr(request, 'simplify', True) else "Include 7ths and suspended chords"
 
         prompt = f"""
-        You are an expert music transcriber. Create a valid JSON song sheet for "{request.songQuery}" on {instrument}.
+        Create a valid JSON song sheet for "{request.songQuery}" on {instrument}.
         Constraint: {simplify}.
 
-        JSON schema:
+        Required JSON schema:
         {{
           "songTitle": "Exact Song Title",
           "artist": "Artist Name", 
@@ -106,48 +157,96 @@ class GeminiMusicService:
           "chordDiagrams": [
             {{"chord": "C", "frets": [-1,3,2,0,1,0], "fingers": [0,3,2,0,1,0], "capoFret": 0}}
           ],
-          "substitutions": [],
+          "substitutions": [
+             {{
+                "originalChord": "Target Chord (e.g. F)", 
+                "substitutedChord": "Easy Version (e.g. Fmaj7)", 
+                "theory": "Why this substitution works"
+             }}
+          ],
           "practiceTips": ["Specific tip 1", "Specific tip 2"]
         }}
         """
         return await self._generate_json(prompt)
 
-    async def generate_backing_track(self, prompt: str) -> dict:
+    async def generate_backing_track(self, prompt_text: str) -> dict:
+        """
+        Generates a 1-bar loop playable by a step sequencer.
+        instruments: drums, bass, keys.
+        """
         full_prompt = f"""
-        Act as a music producer. Create a backing track arrangement for this request: "{prompt}".
+        Create a short 1-bar loop (16 steps, 4/4 time) backing track based on this request: "{prompt_text}".
+        
+        Return a JSON object playable by a step sequencer.
+        
+        Instruments Rules:
+        1. "drums": Valid notes are strictly "kick", "snare", "hat", "open_hat", "clap".
+        2. "bass": Monophonic. Notes should be "Note+Octave" (e.g., "C2", "F#1").
+        3. "keys": Polyphonic chords. Notes should be arrays of "Note+Octave" (e.g., ["C4", "E4", "G4"]).
 
-        Return ONLY valid JSON using this schema:
+        Required JSON schema:
         {{
           "title": "Track Title",
           "style": "Detected Style", 
           "bpm": 120,
-          "key": "Detected Key",
+          "description": "Brief description of the vibe",
+          "youtubeQueries": ["Search query 1", "Search query 2"],
           "tracks": [
             {{
               "instrument": "drums",
               "steps": [
-                {{"beat": 1, "notes": ["kick"]}},
-                {{"beat": 2, "notes": ["snare"]}}
+                {{"beat": 0, "notes": ["kick"], "duration": 1}},
+                {{"beat": 4, "notes": ["snare"], "duration": 1}}
+              ]
+            }},
+            {{
+              "instrument": "bass",
+              "steps": [
+                 {{"beat": 0, "notes": ["C2"], "duration": 2}}
+              ]
+            }},
+            {{
+              "instrument": "keys",
+              "steps": [
+                 {{"beat": 0, "notes": ["C4", "E4", "G4"], "duration": 4}}
               ]
             }}
-          ],
-          "youtubeQueries": ["Search query 1", "Search query 2"],
-          "description": "Brief description of the vibe"
+          ]
         }}
         """
         return await self._generate_json(full_prompt)
 
     async def generate_lesson(self, skill: str, instrument: str, focus: str) -> dict:
+        """
+        Generates a hierarchical lesson plan with timed sections.
+        """
         prompt = f"""
-        You are a music teacher. Generate a lesson plan for a {skill} {instrument} player focusing on "{focus}".
-        Must be educational, around 600 words.
+        Create a detailed music lesson plan for {instrument}.
+        Level: {skill}
+        Topic: {focus}
+        Duration: 45 minutes.
+        
+        Provide a structured plan. 
+        IMPORTANT: In the 'content' arrays, do NOT use markdown formatting like asterisks (*) or dashes (-). Just provide plain text strings for each point.
 
-        Return valid JSON:
+        Required JSON schema:
         {{
-          "lesson": "# {focus.title()} Lesson\\n\\n## Introduction\\n[Content in Markdown]",
           "title": "{focus.title()} Lesson",
-          "duration": "30-45 minutes", 
-          "goals": ["Specific Goal 1", "Specific Goal 2", "Specific Goal 3"]
+          "overview": "Brief encouraging summary of goals",
+          "totalDuration": 45,
+          "sections": [
+            {{
+                "heading": "Introduction & Warmup",
+                "durationMin": 5,
+                "content": ["Step 1 description", "Step 2 description"]
+            }},
+            {{
+                "heading": "Main Concept: {focus}",
+                "durationMin": 20,
+                "content": ["Explanation point 1", "Exercise instruction"]
+            }}
+          ],
+          "youtubeQueries": ["Search query 1", "Search query 2"]
         }}
         """
         return await self._generate_json(prompt)
@@ -156,7 +255,7 @@ class GeminiMusicService:
         prompt = f"""
         Create a rhythm/strumming pattern for a {level} player in {time_sig} time signature.
 
-        Return valid JSON:
+        Required JSON schema:
         {{
           "name": "Pattern Name",
           "timeSignature": "{time_sig}",
@@ -171,27 +270,28 @@ class GeminiMusicService:
 
     async def generate_melody(self, key: str, style: str) -> dict:
         prompt = f"""
-        Compose a short melody in the key of {key} in {style} style.
+        Compose a short melody motif (4-8 bars) in the key of {key} in {style} style.
 
-        Return valid JSON:
+        Required JSON schema:
         {{
-          "scale": "Scale Used (e.g. Minor Pentatonic)",
+          "scale": "Scale Used",
           "key": "{key}",
-          "notes": ["Note1", "Note2", "Note3"],
-          "intervals": ["Interval1", "Interval2"],
-          "suggestion": "Advice on phrasing this melody"
+          "notes": ["C4 (Quarter)", "E4 (Eighth)"],
+          "intervals": ["Major 3rd", "Perfect 5th"],
+          "suggestion": "Brief text description of the melody's character"
         }}
         """
         return await self._generate_json(prompt)
 
     async def generate_improv_tips(self, query: str) -> dict:
         prompt = f"""
-        Provide improvisation tips for: "{query}".
+        I am improvising over the following context: "{query}".
 
-        Return valid JSON:
+        Required JSON schema:
         {{
             "style": "Identified Style",
             "recommendedScales": ["Scale 1", "Scale 2"],
+            "keyTargetNotes": ["Note1", "Note2"],
             "tips": ["Tip 1", "Tip 2"],
             "backingTrackSearch": "Youtube search query"
         }}
@@ -201,15 +301,15 @@ class GeminiMusicService:
     async def generate_lyrics(self, topic: str, genre: str, mood: str) -> dict:
         prompt = f"""
         Write original song lyrics.
-        Topic: {topic}
-        Genre: {genre}
-        Mood: {mood}
+        Topic: {topic}, Genre: {genre}, Mood: {mood}
+        
+        Include suggested chord changes in brackets [ ] at the start of key lines.
 
-        Return valid JSON:
+        Required JSON schema:
         {{
             "title": "Creative Title",
             "structure": ["Verse 1", "Chorus", "Verse 2"],
-            "lyrics": "Verse 1:\\n[lyrics]\\n\\nChorus:\\n[chorus]"
+            "lyrics": "Verse 1:\\n[G] Line of lyrics...\\n[C] Line of lyrics...\\n\\nChorus:\\n[D] Chorus line..."
         }}
         """
         return await self._generate_json(prompt)
@@ -218,10 +318,10 @@ class GeminiMusicService:
         prompt = f"""
         Act as a practice coach. Analyze these past sessions: {json.dumps(sessions)}.
 
-        Return valid JSON:
+        Required JSON schema:
         {{
-            "insight": "Observation",
-            "recommendation": "Next action",
+            "insight": "Observation about consistency or focus",
+            "recommendation": "Specific actionable tip",
             "focusArea": "Technical area to improve"
         }}
         """

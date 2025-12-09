@@ -98,19 +98,19 @@ const ChordBox: React.FC<{ chord: string; instrument: Instrument }> = ({ chord, 
         {shape.map((fret, stringIdx) => {
            const cx = stringIdx * stringSpacing;
            if (fret === -1) {
-              return <text key={stringIdx} x={cx} y="-6" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#ef4444">×</text>;
+             return <text key={stringIdx} x={cx} y="-6" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#ef4444">×</text>;
            }
            if (fret === 0) {
-              return <circle key={stringIdx} cx={cx} cy="-6" r="2.5" stroke="#374151" strokeWidth="1" fill="none" />;
+             return <circle key={stringIdx} cx={cx} cy="-6" r="2.5" stroke="#374151" strokeWidth="1" fill="none" />;
            }
            return (
-              <circle 
-                key={stringIdx} 
-                cx={cx} 
-                cy={(fret * fretSpacing) - (fretSpacing / 2)} 
-                r="5.5" 
-                fill="#2563eb" 
-              />
+             <circle 
+               key={stringIdx} 
+               cx={cx} 
+               cy={(fret * fretSpacing) - (fretSpacing / 2)} 
+               r="5.5" 
+               fill="#2563eb" 
+             />
            );
         })}
       </svg>
@@ -181,12 +181,10 @@ const formatChordSheet = (songData: FullDisplayData): string => {
       formattedResult += `[${section.section}]\n\n`;
       
       section.lines.forEach((line: { lyrics: string; isChordLine: boolean }) => {
-        if (line.isChordLine) {
-          formattedResult += `${line.lyrics}\n`;
-        } else {
-          formattedResult += `${line.lyrics}\n\n`;
-        }
+        // We use the raw line here. The magic happens in the CSS (whitespace-pre)
+        formattedResult += `${line.lyrics}\n`;
       });
+      formattedResult += `\n`;
     });
   } else {
     // Fallback: Create basic structure from progression
@@ -342,7 +340,7 @@ const ChordStudio: React.FC = () => {
     setTimeout(() => setIsPlaying(false), totalDuration);
   };
 
-  // Function to render chord sheet with proper formatting
+  // --- FIX: RENDER FUNCTION WITH ALIGNMENT ---
   const renderChordSheet = (text: string) => {
     return text.split('\n').map((line, i) => {
       // Check if line contains chords (has chord characters but might be mixed with lyrics)
@@ -350,15 +348,16 @@ const ChordStudio: React.FC = () => {
       const isSectionHeader = line.trim().startsWith('[') && line.trim().endsWith(']');
       const isMetadata = line.includes('Key:') || line.includes('Capo:') || line.includes('Artist:') || line.includes('Tuning:');
       
-      let className = "font-mono text-sm md:text-base leading-relaxed ";
+      // CRITICAL FIX: whitespace-pre-wrap preserves the spaces the AI adds for alignment
+      let className = "font-mono text-sm md:text-base whitespace-pre-wrap ";
       
       if (isSectionHeader) {
         className += "font-bold text-gray-900 text-lg mt-6 mb-2 uppercase tracking-wide";
       } else if (isMetadata) {
         className += "text-gray-600 font-medium";
       } else if (hasChords && !line.trim().match(/[a-z]/)) {
-        // Line with only chords (no lowercase letters)
-        className += "text-blue-600 font-bold tracking-widest text-lg";
+        // Line with only chords (no lowercase letters) - Make it pop!
+        className += "text-blue-600 font-bold tracking-normal"; 
       } else if (hasChords) {
         // Line with chords and possibly lyrics
         className += "text-blue-600 font-bold";
@@ -481,7 +480,7 @@ const ChordStudio: React.FC = () => {
                         </div>
                      )}
 
-                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative min-h-[400px] font-mono">
+                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative min-h-[400px]">
                         {/* Paper texture effect */}
                         <div className="absolute top-0 left-0 w-full h-2 bg-linear-to-b from-gray-100 to-transparent opacity-50"></div>
                         <div className="space-y-1">
@@ -562,7 +561,7 @@ const ChordStudio: React.FC = () => {
                      </div>
 
                      {/* Chord Sheet Display */}
-                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative min-h-[400px] font-mono">
+                     <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 relative min-h-[400px]">
                         <div className="absolute top-0 left-0 w-full h-2 bg-linear-to-b from-gray-100 to-transparent opacity-50"></div>
                         <div className="space-y-1">
                            {renderChordSheet(formatChordSheet(composeResult))}
