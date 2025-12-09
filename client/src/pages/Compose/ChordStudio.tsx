@@ -1,34 +1,22 @@
 /* eslint-disable */
+// src/pages/Compose/ChordStudio.tsx
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { aiApi, type FullDisplayData } from '../../api/apiService';
 import { 
   MagnifyingGlassIcon, 
   SparklesIcon, 
-  BookOpenIcon, 
-  AdjustmentsHorizontalIcon,
   PlayCircleIcon,
-  ArrowPathIcon,
   InformationCircleIcon,
   ChevronUpIcon,
   MusicalNoteIcon,
-  BeakerIcon,
-  ChartBarIcon,
-  ClockIcon,
-  HashtagIcon
+  HashtagIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 
 // ==========================================
-// 1. ANIMATED LOADERS (High-End Visuals)
+// 1. ANIMATED LOADERS
 // ==========================================
-
-const PulseLoader: React.FC = () => (
-  <div className="flex justify-center space-x-2">
-    <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }}></div>
-    <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse delay-75"></div>
-    <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse delay-150"></div>
-  </div>
-);
 
 const WaveLoader: React.FC = () => (
   <div className="flex justify-center space-x-1 h-6 items-end">
@@ -41,7 +29,7 @@ const WaveLoader: React.FC = () => (
 );
 
 const ComposerLoader: React.FC = () => (
-  <div className="relative w-12 h-12">
+  <div className="relative w-12 h-12 mx-auto">
     <div className="absolute inset-0 border-2 border-purple-200 rounded-full animate-spin"></div>
     <div className="absolute inset-2 border-2 border-purple-300 rounded-full animate-spin-reverse"></div>
     <div className="absolute inset-0 flex items-center justify-center">
@@ -67,13 +55,6 @@ const ProgressLoader: React.FC<{ progress: number }> = ({ progress }) => (
   </div>
 );
 
-const TypingLoader: React.FC = () => (
-  <div className="flex items-center space-x-2">
-    <span className="text-xs text-gray-500 font-medium">AI is thinking...</span>
-    <PulseLoader />
-  </div>
-);
-
 // ==========================================
 // 2. CONSTANTS & DATA TYPES
 // ==========================================
@@ -85,10 +66,9 @@ const NOTATION_MODES = ['Standard', 'Numbers (1 4 5)', 'Roman (I IV V)'];
 type Instrument = 'Guitar' | 'Ukulele' | 'Piano';
 type NotationMode = 'Standard' | 'Numbers (1 4 5)' | 'Roman (I IV V)';
 
-// Comprehensive Dictionary for Visuals
+// Visuals Dictionary
 const CHORD_SHAPES: Record<string, Record<string, number[]>> = {
   Guitar: {
-    // Basic Triads
     'C': [-1,3,2,0,1,0], 'Cm': [-1,3,5,5,4,3], 'C7': [-1,3,2,3,1,0], 'Cmaj7': [-1,3,2,0,0,0],
     'D': [-1,-1,0,2,3,2], 'Dm': [-1,-1,0,2,3,1], 'D7': [-1,-1,0,2,1,2], 'Dmaj7': [-1,-1,0,2,2,2],
     'E': [0,2,2,1,0,0], 'Em': [0,2,2,0,0,0], 'E7': [0,2,0,1,0,0], 'Emaj7': [0,2,1,1,0,0],
@@ -96,7 +76,6 @@ const CHORD_SHAPES: Record<string, Record<string, number[]>> = {
     'G': [3,2,0,0,0,3], 'Gm': [3,5,5,3,3,3], 'G7': [3,2,0,0,0,1], 'Gmaj7': [3,2,0,0,0,2],
     'A': [-1,0,2,2,2,0], 'Am': [-1,0,2,2,1,0], 'A7': [-1,0,2,0,2,0], 'Amaj7': [-1,0,2,1,2,0],
     'B': [-1,2,4,4,4,2], 'Bm': [-1,2,4,4,3,2], 'B7': [-1,2,1,2,0,2],
-    // Slash Chords & Extensions
     'G/B': [-1,2,0,0,0,3], 'C/E': [0,3,2,0,1,0], 'D/F#': [2,0,0,2,3,2],
     'Am/G': [3,0,2,2,1,0], 'F/C': [-1,3,3,2,1,1], 'G/F': [1,2,0,0,0,3],
     'Bb': [-1,1,3,3,3,1], 'Eb': [-1,-1,1,3,4,3], 'Bbsus4': [-1,1,3,3,4,1],
@@ -124,39 +103,61 @@ const NOTE_MAP: Record<string, number> = {
   'G':7, 'G#':8, 'Ab':8, 'A':9, 'A#':10, 'Bb':10, 'B':11 
 };
 
-// Helper: Calculate frequency mathematically
+// Helper: Calculate frequency
 const getFreq = (noteIndex: number, octave: number) => {
   const midiNote = noteIndex + (octave + 1) * 12; 
   return 440 * Math.pow(2, (midiNote - 69) / 12);
 };
 
-// Helper: Convert "C" -> "1", "G" -> "5" based on Key
+// Helper: Format Chord Sheet (Missing in your code previously)
+const formatChordSheet = (songData: FullDisplayData): string => {
+  if (!songData) return '';
+  let formattedResult = '';
+
+  // Use tablature if available
+  if (songData.tablature && songData.tablature.length > 0) {
+    songData.tablature.forEach((section: { section: string; lines: Array<{ lyrics: string; isChordLine: boolean }> }) => {
+      formattedResult += `[${section.section}]\n`;
+      section.lines.forEach((line) => {
+        formattedResult += `${line.lyrics}\n`;
+      });
+      formattedResult += `\n`;
+    });
+  } else if (songData.progression) {
+    // Fallback: Create basic structure from progression
+    formattedResult += `[Chords]\n`;
+    const chords = songData.progression.map((p: any) => p.chord);
+    
+    // Group in lines of 4
+    for (let i = 0; i < chords.length; i += 4) {
+        formattedResult += chords.slice(i, i + 4).join('    ') + '\n\n';
+    }
+  }
+
+  return formattedResult;
+};
+
+// Helper: Convert Notation
 const convertChordToNotation = (chord: string, key: string, mode: NotationMode): string => {
   if (mode === 'Standard') return chord;
   if (!key || key === 'Original') return chord; 
 
-  // 1. Identify Key Root
-  const keyRoot = key.split(' ')[0]; // "C Major" -> "C"
+  const keyRoot = key.split(' ')[0]; 
   if (NOTE_MAP[keyRoot] === undefined) return chord;
 
-  // 2. Identify Chord Root & Quality
-  // Matches "G", "G/B", "Gmaj7", "G#m"
   const slashParts = chord.split('/');
   const chordRootMatch = slashParts[0].match(/^([A-G][#b]?)(.*)$/);
   if (!chordRootMatch) return chord;
 
   const rootNote = chordRootMatch[1];
   const quality = chordRootMatch[2];
-  const bassNote = slashParts[1]; // The 'B' in 'G/B'
+  const bassNote = slashParts[1]; 
 
-  // 3. Calculate Interval (0-11)
   const keyVal = NOTE_MAP[keyRoot];
   const rootVal = NOTE_MAP[rootNote];
   let diff = rootVal - keyVal;
   if (diff < 0) diff += 12;
 
-  // 4. Map to Scale Degree
-  // Major Scale: 0(1), 2(2), 4(3), 5(4), 7(5), 9(6), 11(7)
   const degrees: Record<number, {n: string, r: string}> = {
     0: {n:'1', r:'I'}, 1: {n:'b2', r:'bII'}, 2: {n:'2', r:'II'}, 3: {n:'b3', r:'bIII'},
     4: {n:'3', r:'III'}, 5: {n:'4', r:'IV'}, 6: {n:'#4', r:'#IV'}, 7: {n:'5', r:'V'},
@@ -169,15 +170,12 @@ const convertChordToNotation = (chord: string, key: string, mode: NotationMode):
   let result = '';
 
   if (mode === 'Roman (I IV V)') {
-    // Minor chords become lowercase roman (vi instead of VI)
     if (quality.includes('m') && !quality.includes('maj')) {
       result = d.r.toLowerCase() + quality.replace('m', '');
     } else {
       result = d.r + quality;
     }
   } else {
-    // Nashville Numbers (1 4 5)
-    // Minor chords get a dash (6-)
     if (quality.includes('m') && !quality.includes('maj')) {
       result = d.n + '-' + quality.replace('m', '');
     } else {
@@ -185,7 +183,6 @@ const convertChordToNotation = (chord: string, key: string, mode: NotationMode):
     }
   }
 
-  // 5. Handle Bass Inversion (Slash Chords)
   if (bassNote) {
     const bassVal = NOTE_MAP[bassNote];
     if (bassVal !== undefined) {
@@ -201,7 +198,7 @@ const convertChordToNotation = (chord: string, key: string, mode: NotationMode):
   return result;
 };
 
-// Universal Player
+// Player Logic
 const playChord = (ctx: AudioContext, chordName: string, time: number, duration: number) => {
   const parts = chordName.split('/');
   const coreChord = parts[0];
@@ -216,7 +213,6 @@ const playChord = (ctx: AudioContext, chordName: string, time: number, duration:
   if (NOTE_MAP[rootStr] === undefined) return;
   const rootVal = NOTE_MAP[rootStr];
 
-  // Right Hand Intervals
   let intervals = [0, 4, 7]; 
   if (quality.includes('m') && !quality.includes('maj')) intervals = [0, 3, 7];
   if (quality.includes('dim')) intervals = [0, 3, 6];
@@ -240,7 +236,6 @@ const playChord = (ctx: AudioContext, chordName: string, time: number, duration:
     osc.start(time); osc.stop(time + duration);
   });
 
-  // Left Hand Bass
   let bassVal = rootVal;
   if (bassChar && NOTE_MAP[bassChar] !== undefined) {
     bassVal = NOTE_MAP[bassChar];
@@ -320,7 +315,7 @@ const ChordStudio: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'search' | 'compose'>('search');
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument>('Guitar');
   const [selectedKey, setSelectedKey] = useState('Original');
-  const [notationMode, setNotationMode] = useState<NotationMode>('Standard'); // <--- NEW STATE
+  const [notationMode, setNotationMode] = useState<NotationMode>('Standard');
   
   const [isVisualizerOpen, setIsVisualizerOpen] = useState(true);
   const [isAnimatingChords, setIsAnimatingChords] = useState(false);
@@ -345,7 +340,7 @@ const ChordStudio: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const progressIntervalRef = useRef<NodeJS.Timeout>();
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Extract chords logic
   const extractedChords = useMemo(() => {
@@ -467,16 +462,12 @@ const ChordStudio: React.FC = () => {
       const hasChords = /[A-G][#b]?(m|maj|dim|sus|7|9|add|aug)/.test(line);
       const isHeader = line.trim().startsWith('[') && line.trim().endsWith(']');
       
-      // CRITICAL: whitespace-pre preserves the spaces added by AI to align chords over lyrics
       let className = "font-mono text-sm md:text-base whitespace-pre block "; 
-      
       let displayLine = line;
 
-      // If it is a chord line, convert to selected notation
       if (hasChords && !line.match(/[a-z]/)) {
-         className += "text-indigo-600 font-bold pt-4"; // Add padding above chords
+         className += "text-indigo-600 font-bold pt-4"; 
          
-         // Replace chords in the string while PRESERVING SPACING
          displayLine = line.replace(/\b[A-G][#b]?(?:m|maj|dim|aug|sus|add)?(?:7|9|11|13|6)?(?:(?:\/)[A-G][#b]?)?\b/g, (match) => {
              return convertChordToNotation(match, currentKey, notationMode);
          });
@@ -517,7 +508,6 @@ const ChordStudio: React.FC = () => {
 
       {/* GLOBAL SETTINGS BAR */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center gap-4 overflow-x-auto scrollbar-hide">
-         {/* Key Selector */}
          <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Key:</span>
             <select
@@ -529,7 +519,6 @@ const ChordStudio: React.FC = () => {
             </select>
          </div>
 
-         {/* Instrument Selector */}
          <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Inst:</span>
             <select
@@ -541,7 +530,6 @@ const ChordStudio: React.FC = () => {
             </select>
          </div>
 
-         {/* Notation Selector (NEW) */}
          <div className="flex items-center gap-2 border-l pl-4">
             <span className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap flex items-center gap-1">
                <HashtagIcon className="w-3 h-3"/> Notation:
@@ -584,7 +572,7 @@ const ChordStudio: React.FC = () => {
                         </div>
                         <div className="flex gap-2">
                            <button onClick={handlePlay} className="p-2 bg-indigo-600 text-white rounded-full shadow hover:scale-105 transition-transform"><PlayCircleIcon className="w-6 h-6"/></button>
-                           <button onClick={handleAnalyze} className="p-2 bg-white border text-gray-600 rounded-full shadow hover:bg-gray-50"><ChartBarIcon className="w-6 h-6"/></button>
+                           <button onClick={handleAnalyze} disabled={analyzing} className="p-2 bg-white border text-gray-600 rounded-full shadow hover:bg-gray-50"><ChartBarIcon className="w-6 h-6"/></button>
                         </div>
                      </div>
                      {theoryAnalysis && <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm flex gap-2 border border-blue-100"><InformationCircleIcon className="w-5 h-5 shrink-0"/>{theoryAnalysis}</div>}
@@ -636,15 +624,15 @@ const ChordStudio: React.FC = () => {
             {extractedChords.length > 0 && <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">{extractedChords.length} Chords</span>}
          </div>
          {isVisualizerOpen && (
-             <div className="flex-1 overflow-x-auto p-4 flex items-center gap-4 bg-gray-50/50">
-                {extractedChords.length > 0 ? (
-                   extractedChords.map((chord, i) => (
-                      <div key={i} className="shrink-0"><ChordBox chord={chord} instrument={selectedInstrument} isAnimating={isAnimatingChords}/></div>
-                   ))
-                ) : (
-                   <div className="w-full text-center text-gray-400 text-sm">Select a song to visualize chords</div>
-                )}
-             </div>
+            <div className="flex-1 overflow-x-auto p-4 flex items-center gap-4 bg-gray-50/50">
+               {extractedChords.length > 0 ? (
+                  extractedChords.map((chord, i) => (
+                     <div key={i} className="shrink-0"><ChordBox chord={chord} instrument={selectedInstrument} isAnimating={isAnimatingChords}/></div>
+                  ))
+               ) : (
+                  <div className="w-full text-center text-gray-400 text-sm">Select a song to visualize chords</div>
+               )}
+            </div>
          )}
       </div>
     </div>
