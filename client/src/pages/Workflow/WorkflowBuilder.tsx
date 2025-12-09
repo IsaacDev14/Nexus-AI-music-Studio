@@ -115,7 +115,7 @@ const WorkflowBuilder: React.FC = () => {
       });
       setGeneratedLesson(lesson);
     } catch (err) {
-      setError('Failed to generate lesson. Is your AI backend running on port 8000?');
+      setError('Oops. You have hit your limit');
       console.error(err);
     } finally {
       setIsGenerating(false);
