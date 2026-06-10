@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { getPracticeAdvice } from '../../api/apiService';
-import { ChartBarIcon, ClockIcon, TrophyIcon, FireIcon, PlusIcon, ChatBubbleBottomCenterTextIcon } from '@heroicons/react/24/solid';
-
-interface Session {
-  id: string;
-  date: string;
-  duration: number;
-  instrument: string;
-  focus: string;
-  notes: string;
-}
+import { ChartBarIcon, ClockIcon, TrophyIcon, FireIcon, PlusIcon, ChatBubbleBottomCenterTextIcon, TrashIcon } from '@heroicons/react/24/solid';
+import ErrorBanner from '../../components/UI/ErrorBanner';
+import {
+  loadPracticeSessions,
+  savePracticeSessions,
+  getTotalPracticeHours,
+  getPracticeStreak,
+  type PracticeSession,
+} from '../../utils/practiceStats';
 
 const PracticeLog: React.FC = () => {
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<PracticeSession[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [advice, setAdvice] = useState('');
   const [loadingAdvice, setLoadingAdvice] = useState(false);
+  const [error, setError] = useState('');
 
   // Form State
-  const [newSession, setNewSession] = useState<Partial<Session>>({
+  const [newSession, setNewSession] = useState<Partial<PracticeSession>>({
     duration: 30,
     instrument: 'Guitar',
     focus: '',
@@ -26,14 +26,20 @@ const PracticeLog: React.FC = () => {
   });
 
   useEffect(() => {
-    const saved = localStorage.getItem('music_studio_logs');
-    if (saved) {
-      setSessions(JSON.parse(saved));
-    }
+    setSessions(loadPracticeSessions());
   }, []);
 
+  const persistSessions = (updated: PracticeSession[]) => {
+    setSessions(updated);
+    savePracticeSessions(updated);
+  };
+
+  const deleteSession = (id: string) => {
+    persistSessions(sessions.filter((s) => s.id !== id));
+  };
+
   const saveSession = () => {
-    const session: Session = {
+    const session: PracticeSession = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       duration: newSession.duration || 30,
@@ -42,23 +48,31 @@ const PracticeLog: React.FC = () => {
       notes: newSession.notes || ''
     };
     
-    const updated = [session, ...sessions];
-    setSessions(updated);
-    localStorage.setItem('music_studio_logs', JSON.stringify(updated));
+    persistSessions([session, ...sessions]);
     setShowForm(false);
     setNewSession({ duration: 30, instrument: 'Guitar', focus: '', notes: '' });
   };
 
   const handleGetAdvice = async () => {
+    if (sessions.length === 0) {
+      setError('Log at least one session before requesting advice.');
+      return;
+    }
     setLoadingAdvice(true);
-    const result = await getPracticeAdvice(sessions);
-    setAdvice(result);
-    setLoadingAdvice(false);
+    setError('');
+    try {
+      const result = await getPracticeAdvice(sessions);
+      setAdvice(result);
+    } catch {
+      setError('Could not reach the AI service. Check that the backend is running.');
+    } finally {
+      setLoadingAdvice(false);
+    }
   };
 
-  // Stats
-  const totalHours = (sessions.reduce((acc, s) => acc + s.duration, 0) / 60).toFixed(1);
+  const totalHours = getTotalPracticeHours(sessions);
   const sessionCount = sessions.length;
+  const streak = getPracticeStreak(sessions);
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-50 overflow-hidden">
@@ -84,8 +98,13 @@ const PracticeLog: React.FC = () => {
       {/* Main Content - Scrollable */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-6xl mx-auto w-full">
+          {error && (
+            <div className="mb-4">
+              <ErrorBanner message={error} onDismiss={() => setError('')} />
+            </div>
+          )}
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
               <div className="p-4 bg-blue-50 rounded-full text-blue-600">
                 <ClockIcon className="w-8 h-8" />
@@ -93,6 +112,16 @@ const PracticeLog: React.FC = () => {
               <div>
                 <div className="text-sm text-gray-500 font-medium uppercase">Total Practice</div>
                 <div className="text-3xl font-bold text-gray-900">{totalHours} <span className="text-sm font-normal text-gray-400">hrs</span></div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+              <div className="p-4 bg-orange-50 rounded-full text-orange-600">
+                <FireIcon className="w-8 h-8" />
+              </div>
+              <div>
+                <div className="text-sm text-gray-500 font-medium uppercase">Streak</div>
+                <div className="text-3xl font-bold text-gray-900">{streak} <span className="text-sm font-normal text-gray-400">days</span></div>
               </div>
             </div>
 
@@ -203,9 +232,18 @@ const PracticeLog: React.FC = () => {
                         <p className="text-sm text-gray-600 line-clamp-2 break-words">{session.notes}</p>
                       </div>
                       
-                      <div className="flex items-center text-gray-500 text-sm font-medium flex-shrink-0">
-                        <ClockIcon className="w-4 h-4 mr-1" />
-                        {session.duration}m
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="flex items-center text-gray-500 text-sm font-medium">
+                          <ClockIcon className="w-4 h-4 mr-1" />
+                          {session.duration}m
+                        </div>
+                        <button
+                          onClick={() => deleteSession(session.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          aria-label="Delete session"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))
