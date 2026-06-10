@@ -156,7 +156,7 @@ export const aiApi = {
       };
     } catch (error) {
       console.error('Error generating song arrangement:', error);
-      throw new Error('Failed to generate song arrangement. Please try again.');
+      throw new Error(getErrorMessage(error, 'Failed to generate song arrangement. Please try again.'));
     }
   },
 
