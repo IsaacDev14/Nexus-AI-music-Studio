@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { generateMelodySuggestion } from '../../api/apiService';
+import ErrorBanner from '../../components/UI/ErrorBanner';
 import { 
   MusicalNoteIcon, 
   SparklesIcon, 
@@ -24,23 +25,22 @@ const MelodyGenerator: React.FC = () => {
   const [melody, setMelody] = useState('');
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<MelodyHistoryItem[]>([]);
+  const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     setLoading(true);
-    const result = await generateMelodySuggestion(key, style);
-    setMelody(result);
-    
-    // Add to history
-    if (result) {
-      setHistory(prev => [{
-        key, 
-        style, 
-        content: result, 
-        timestamp: new Date()
-      }, ...prev]);
+    setError('');
+    try {
+      const result = await generateMelodySuggestion(key, style);
+      setMelody(result);
+      if (result) {
+        setHistory((prev) => [{ key, style, content: result, timestamp: new Date() }, ...prev]);
+      }
+    } catch {
+      setError('Failed to generate melody. Ensure the backend server is running.');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   const loadFromHistory = (item: MelodyHistoryItem) => {
