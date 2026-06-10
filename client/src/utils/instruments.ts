@@ -21,3 +21,7 @@ export const INSTRUMENT_TUNINGS: Record<string, string[]> = {
 export function getTuning(instrument: string): string[] {
   return INSTRUMENT_TUNINGS[instrument] || INSTRUMENT_TUNINGS.Guitar;
 }
+
+export function isStringInstrument(instrument: string): boolean {
+  return ['Guitar', 'Bass', 'Ukulele', 'Violin'].includes(instrument);
+}
