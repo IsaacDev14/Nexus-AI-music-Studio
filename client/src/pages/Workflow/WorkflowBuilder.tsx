@@ -18,7 +18,6 @@ import {
   CodeBracketIcon,
 } from '@heroicons/react/24/outline';
 import { generateLesson } from '../../api/apiService';
-import ErrorBanner from '../../components/UI/ErrorBanner'; // ← REAL AI
 
 const WORKFLOW_STEPS = [
   { id: 'skill-level', label: 'Level', icon: ChartBarIcon },
