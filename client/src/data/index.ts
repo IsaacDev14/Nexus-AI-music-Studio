@@ -8,3 +8,4 @@ export * from "./melodyStyles";
 export * from "./rhythmLevels";
 export * from "./waveforms";
 export * from "./drumNotes";
+export * from "./chordQualities";
