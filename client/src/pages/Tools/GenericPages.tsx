@@ -437,6 +437,7 @@ export const Shortcuts: React.FC = () => (
          </div>
          {[
             { key: 'M', action: 'Open Metronome' },
+            { key: 'A', action: 'Open Track Analyzer' },
             { key: 'T', action: 'Open Tuner' },
             { key: 'P', action: 'Open Practice Log' },
             { key: 'H', action: 'Go to Dashboard' },
