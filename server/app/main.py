@@ -10,7 +10,8 @@ origins = [
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "https://ai-music-store.onrender.com",
-    "https://ai-music-store.onrender.com/"
+    "https://ai-music-store.onrender.com/",
+    "https://ai-music-store-wjnh.vercel.app"
 ]
 
 app.add_middleware(
