@@ -19,6 +19,12 @@ import {
   ServerIcon
 } from '@heroicons/react/24/outline';
 import { NAVIGATION_PATHS } from '../../utils/constants';
+import {
+  loadPracticeSessions,
+  exportSessionsAsJSON,
+  exportSessionsAsCSV,
+  downloadFile,
+} from '../../utils/practiceStats';
 
 // --- SETTINGS / PROFILE ---
 export const LearningProfile: React.FC = () => (
@@ -373,7 +379,18 @@ export const Achievements: React.FC = () => (
 );
 
 // --- EXPORT ---
-export const DataExport: React.FC = () => (
+export const DataExport: React.FC = () => {
+   const handleJSONExport = () => {
+      const sessions = loadPracticeSessions();
+      downloadFile(exportSessionsAsJSON(sessions), `nexus-practice-${Date.now()}.json`, 'application/json');
+   };
+
+   const handleCSVExport = () => {
+      const sessions = loadPracticeSessions();
+      downloadFile(exportSessionsAsCSV(sessions), `nexus-practice-${Date.now()}.csv`, 'text/csv');
+   };
+
+   return (
    <div className="max-w-xl mx-auto p-8 mt-10">
       <div className="bg-white p-8 rounded-xl shadow-xl border border-gray-100 text-center relative overflow-hidden">
          <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-indigo-500 to-transparent opacity-50"></div>
@@ -382,22 +399,23 @@ export const DataExport: React.FC = () => (
              <ServerIcon className="w-10 h-10 text-indigo-500 relative z-10" />
          </div>
          
-         <h1 className="text-2xl font-bold text-gray-900 mb-2">Data Exfiltration</h1>
-         <p className="text-gray-500 mb-8 text-sm font-mono">DOWNLOAD ARCHIVES OF YOUR STUDIO SESSIONS.</p>
+         <h1 className="text-2xl font-bold text-gray-900 mb-2">Export Practice Data</h1>
+         <p className="text-gray-500 mb-8 text-sm">Download your practice session history.</p>
          
          <div className="space-y-3">
-             <button className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 py-4 rounded font-bold flex items-center justify-center gap-3 transition-all group">
+             <button onClick={handleJSONExport} className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 py-4 rounded font-bold flex items-center justify-center gap-3 transition-all group">
                 <ArrowDownTrayIcon className="w-5 h-5 group-hover:animate-bounce" />
-                DOWNLOAD_JSON_PACKET
+                Download JSON
              </button>
-             <button className="w-full bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 py-4 rounded font-bold flex items-center justify-center gap-3 transition-all">
+             <button onClick={handleCSVExport} className="w-full bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 py-4 rounded font-bold flex items-center justify-center gap-3 transition-all">
                 <ArrowDownTrayIcon className="w-5 h-5" />
-                DOWNLOAD_CSV_REPORT
+                Download CSV
              </button>
          </div>
       </div>
    </div>
-);
+   );
+};
 
 // --- SHORTCUTS ---
 export const Shortcuts: React.FC = () => (
