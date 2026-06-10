@@ -30,3 +30,11 @@ export function noteToMidi(note: string, octave = 4): number {
   if (index === -1) return 60;
   return (oct + 1) * 12 + index;
 }
+
+export function getIntervalName(semitones: number): string {
+  const names: Record<number, string> = {
+    0: 'P1', 1: 'm2', 2: 'M2', 3: 'm3', 4: 'M3', 5: 'P4',
+    6: 'TT', 7: 'P5', 8: 'm6', 9: 'M6', 10: 'm7', 11: 'M7',
+  };
+  return names[semitones % 12] || `${semitones}st`;
+}
