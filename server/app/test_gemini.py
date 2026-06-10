@@ -11,7 +11,7 @@ async def test_service():
     
     # Check if service is available
     if not gemini_music_service.available:
-        print("❌ Service not available")
+        print("Service not available")
         print(f"   Model: {gemini_music_service.model}")
         print(f"   Model Name: {gemini_music_service.model_name}")
         return
