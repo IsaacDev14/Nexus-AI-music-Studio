@@ -6,3 +6,4 @@ export * from "./chordNames";
 export * from "./clamp";
 export * from "./sleep";
 export * from "./generateId";
+export * from "./capitalize";
