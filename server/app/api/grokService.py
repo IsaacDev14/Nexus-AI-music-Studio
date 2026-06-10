@@ -2,56 +2,63 @@ import httpx
 import json
 import re
 import os
-import time
+import asyncio
 from dotenv import load_dotenv
+from app.config import GROK_MODELS
 
 load_dotenv()
 GROK_API_KEY = os.getenv("GROK_API_KEY")
+
 
 class GrokService:
     def __init__(self):
         self.api_key = GROK_API_KEY
         self.headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else None
         self.available = bool(self.headers)
+        self.models = GROK_MODELS
 
-    async def _call_grok(self, prompt: str, max_tokens: int = 3000, retries: int = 2):
+    async def _call_grok(self, prompt: str, max_tokens: int = 3000):
         if not self.headers:
             raise Exception("GROK_API_KEY missing")
 
-        payload = {
-            "model": "grok-beta",
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.75,
-            "max_tokens": max_tokens,
-            "top_p": 0.92
-        }
-
-        for attempt in range(retries + 1):
+        last_error = None
+        for model in self.models:
+            payload = {
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.75,
+                "max_tokens": max_tokens,
+                "top_p": 0.92,
+            }
             try:
-                async with httpx.AsyncClient(timeout=60.0) as client:
+                async with httpx.AsyncClient(timeout=90.0) as client:
                     resp = await client.post(
                         "https://api.x.ai/v1/chat/completions",
                         json=payload,
-                        headers=self.headers
+                        headers=self.headers,
                     )
                     if resp.status_code == 429:
-                        wait = 2 ** attempt
-                        print(f"Grok rate limited — retrying in {wait}s (attempt {attempt + 1})")
-                        time.sleep(wait)
+                        print(f"Grok rate limited on {model}, trying next model...")
+                        continue
+                    if resp.status_code == 404:
+                        print(f"Grok model {model} not found, trying next...")
                         continue
                     resp.raise_for_status()
                     return resp.json()["choices"][0]["message"]["content"]
             except Exception as e:
-                if attempt == retries:
-                    raise e
-                wait = 2 ** attempt
-                print(f"Grok request failed — retrying in {wait}s (attempt {attempt + 1})")
-                time.sleep(wait)
+                last_error = e
+                print(f"Grok request failed for {model}: {e}")
+                continue
+
+        raise last_error or Exception("All Grok models failed")
 
     def _extract_json(self, text: str):
         if not text:
             return None
-        match = re.search(r"\{(?:[^{}]|(?:\{[^{}]*\}))*\}", text, re.DOTALL)
+        cleaned = re.sub(r"^```json\s*", "", text.strip())
+        cleaned = re.sub(r"^```\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+        match = re.search(r"\{(?:[^{}]|(?:\{[^{}]*\}))*\}", cleaned, re.DOTALL)
         if not match:
             return None
         try:
@@ -63,45 +70,53 @@ class GrokService:
         if not self.available:
             raise Exception("Grok service not available")
 
-        instrument = getattr(request, 'instrument', 'Guitar')
-        simplify = "Use only easy open chords" if getattr(request, 'simplify', True) else "Include richer voicings"
+        instrument = getattr(request, "instrument", "Guitar")
+        target_key = getattr(request, "key", "Original")
+        is_simplified = getattr(request, "simplify", False)
+
+        key_instruction = (
+            f"TRANSPOSE the entire song to the key of {target_key}."
+            if target_key and target_key != "Original"
+            else "Use the ORIGINAL key of the recording."
+        )
+        complexity = (
+            "Use only easy open chords."
+            if is_simplified
+            else "Include richer voicings, slash chords, and extensions."
+        )
 
         prompt = f"""
-You are UltimateGuitar.com's best transcriber.
-Song: "{request.songQuery}"
-Instrument: {instrument}
-{simplify}
+Act as a professional transcriber. Create a valid JSON song sheet for "{request.songQuery}" on {instrument}.
+{key_instruction}
+{complexity}
 
-Return ONLY valid JSON — no markdown:
+Required JSON schema:
 {{
-  "songTitle": "Exact title",
-  "artist": "Artist name",
-  "key": "e.g. C Major",
+  "songTitle": "Exact Song Title",
+  "artist": "Artist Name",
+  "key": "Key (e.g. C Major)",
   "instrument": "{instrument}",
-  "tuning": "E A D G B E",
-  "progressionSummary": ["C", "Am", "F", "G"],
+  "tuning": "Standard (E A D G B E)",
+  "capoFret": 0,
+  "progressionSummary": ["Chord1", "Chord2"],
   "tablature": [
     {{
       "section": "Verse 1",
       "lines": [
-        {{"lyrics": "C               Am", "isChordLine": true}},
-        {{"lyrics": "Fly me to the moon", "isChordLine": false}}
+        {{"lyrics": "Line with chords aligned above", "isChordLine": true}},
+        {{"lyrics": "Line of lyrics text", "isChordLine": false}}
       ]
     }}
   ],
   "chordDiagrams": [
-    {{"chord": "C", "frets": [-1,3,2,0,1,0], "fingers": [0,3,2,0,1,0], "capoFret": 0}}
+    {{"chord": "C", "frets": [-1, 3, 2, 0, 1, 0], "fingers": [0, 3, 2, 0, 1, 0], "capoFret": 0}}
   ],
   "substitutions": [],
-  "practiceTips": ["Practice at 70 BPM", "Focus on clean changes"]
+  "practiceTips": ["Tip 1"]
 }}
-Use real chords & lyrics. Return ONLY JSON.
+Return ONLY valid JSON.
 """
-
-        text = await self._call_grok(prompt)
-        if not text:
-            raise ValueError("Empty response from Grok")
-            
+        text = await self._call_grok(prompt, max_tokens=4000)
         data = self._extract_json(text)
         if not data:
             raise ValueError("Grok did not return valid JSON")
@@ -112,31 +127,24 @@ Use real chords & lyrics. Return ONLY JSON.
             raise Exception("Grok service not available")
 
         full_prompt = f"""
-Create a backing track arrangement based on: {prompt}
+Act as a music producer. Create a 1-bar loop (16 steps, 4/4) backing track: "{prompt}"
 
-Return ONLY valid JSON with this structure:
+Required JSON schema:
 {{
   "title": "Track Title",
-  "style": "pop rock",
+  "style": "Style",
   "bpm": 120,
-  "key": "C major",
+  "key": "Key",
+  "description": "Description",
+  "youtubeQueries": ["Query 1"],
   "tracks": [
-    {{
-      "instrument": "drums",
-      "steps": [
-        {{"beat": 1, "notes": ["kick"]}},
-        {{"beat": 2, "notes": ["snare"]}}
-      ]
-    }}
-  ],
-  "youtubeQueries": ["search term 1", "search term 2"],
-  "description": "Brief description"
+    {{"instrument": "drums", "steps": [{{"beat": 0, "notes": ["kick"], "duration": 1}}]}},
+    {{"instrument": "bass", "steps": [{{"beat": 0, "notes": ["C2"], "duration": 2}}]}}
+  ]
 }}
+Return ONLY valid JSON.
 """
         text = await self._call_grok(full_prompt)
-        if not text:
-            raise ValueError("Empty response from Grok")
-            
         data = self._extract_json(text)
         if not data:
             raise ValueError("Grok did not return valid JSON for backing track")
@@ -146,11 +154,20 @@ Return ONLY valid JSON with this structure:
         if not self.available:
             raise Exception("Grok service not available")
 
-        prompt = f"Generate a {level} {time_sig} drum pattern in 16th notes. Return ONLY JSON: {{'pattern': 'x--x--x--x--x--x-', 'description': 'brief description', 'difficulty': '{level}'}}"
+        prompt = f"""
+Create a rhythm pattern. Time: {time_sig}, Level: {level}.
+
+Required JSON schema:
+{{
+  "name": "Pattern Name",
+  "timeSignature": "{time_sig}",
+  "description": "How to play",
+  "pattern": "x-x-x-x-x-x-x-x-",
+  "difficulty": "{level}"
+}}
+Return ONLY valid JSON.
+"""
         text = await self._call_grok(prompt)
-        if not text:
-            raise ValueError("Empty response from Grok")
-            
         data = self._extract_json(text)
         if not data or "pattern" not in data:
             raise ValueError("Grok did not return valid rhythm pattern")
@@ -160,11 +177,19 @@ Return ONLY valid JSON with this structure:
         if not self.available:
             raise Exception("Grok service not available")
 
-        prompt = f"Write a short {style} melody in {key} using note names and durations (e.g. C4/4 E4/4 G4/2). Return ONLY JSON: {{'melody': 'C4 E4 G4', 'description': 'brief description', 'style': '{style}'}}"
+        prompt = f"""
+Compose a short melody in {key}, {style} style using note names and durations.
+
+Required JSON schema:
+{{
+  "melody": "C4 E4 G4 C5 | B4 G4 E4 C4",
+  "description": "Brief description of the melody",
+  "style": "{style}",
+  "key": "{key}"
+}}
+Return ONLY valid JSON.
+"""
         text = await self._call_grok(prompt)
-        if not text:
-            raise ValueError("Empty response from Grok")
-            
         data = self._extract_json(text)
         if not data or "melody" not in data:
             raise ValueError("Grok did not return valid melody")
@@ -174,11 +199,19 @@ Return ONLY valid JSON with this structure:
         if not self.available:
             raise Exception("Grok service not available")
 
-        prompt = f"Give 3 concise improv tips for {query}. Return ONLY valid JSON with 'response', 'scales', 'targetNotes', 'techniques'."
+        prompt = f"""
+Improvisation advice for: "{query}".
+
+Required JSON schema:
+{{
+  "response": "Detailed paragraph of improv advice",
+  "scales": ["Scale 1", "Scale 2"],
+  "targetNotes": ["Note 1", "Note 2"],
+  "techniques": ["Technique 1", "Technique 2"]
+}}
+Return ONLY valid JSON.
+"""
         text = await self._call_grok(prompt)
-        if not text:
-            raise ValueError("Empty response from Grok")
-            
         data = self._extract_json(text)
         if not data:
             raise ValueError("Grok did not return valid improv tips")
@@ -188,11 +221,18 @@ Return ONLY valid JSON with this structure:
         if not self.available:
             raise Exception("Grok service not available")
 
-        prompt = f"Write original lyrics about {topic} in {genre} style, {mood} mood. Verse-Chorus structure. Return ONLY JSON: {{'lyrics': 'full lyrics here', 'title': 'optional title', 'structure': 'verse-chorus'}}"
+        prompt = f"""
+Write lyrics. Topic: {topic}, Genre: {genre}, Mood: {mood}.
+
+Required JSON schema:
+{{
+  "title": "Song Title",
+  "structure": "Verse / Chorus / Bridge",
+  "lyrics": "Full lyrics with section labels"
+}}
+Return ONLY valid JSON.
+"""
         text = await self._call_grok(prompt)
-        if not text:
-            raise ValueError("Empty response from Grok")
-            
         data = self._extract_json(text)
         if not data or "lyrics" not in data:
             raise ValueError("Grok did not return valid lyrics")
@@ -202,11 +242,18 @@ Return ONLY valid JSON with this structure:
         if not self.available:
             raise Exception("Grok service not available")
 
-        prompt = f"Analyze these practice sessions and give personalized advice: {json.dumps(sessions[:3])}. Return ONLY JSON: {{'advice': 'main advice', 'insights': ['insight1', 'insight2'], 'nextGoals': ['goal1', 'goal2']}}"
+        prompt = f"""
+Analyze these practice sessions and give personalized advice: {json.dumps(sessions[:5])}
+
+Required JSON schema:
+{{
+  "advice": "Main personalized advice paragraph",
+  "insights": ["Insight 1", "Insight 2"],
+  "nextGoals": ["Goal 1", "Goal 2"]
+}}
+Return ONLY valid JSON.
+"""
         text = await self._call_grok(prompt)
-        if not text:
-            raise ValueError("Empty response from Grok")
-            
         data = self._extract_json(text)
         if not data or "advice" not in data:
             raise ValueError("Grok did not return valid practice advice")
@@ -217,46 +264,22 @@ Return ONLY valid JSON with this structure:
             raise Exception("Grok service not available")
 
         prompt = f"""
-You are an excellent, patient {instrument} teacher.
-Write a clear, detailed, and encouraging lesson for a {skill.title()} player focusing on {focus}.
-Use Markdown. Aim for 600–900 words — thorough but readable.
+Create a lesson plan for {instrument}, Level: {skill}, Topic: {focus}.
 
-Return ONLY valid JSON with this structure:
+Required JSON schema:
 {{
-  "lesson": "# Full markdown lesson content here...",
-  "title": "{focus.title()} Lesson",
+  "title": "Lesson Title",
+  "lesson": "Full markdown lesson content (600-900 words)",
   "duration": "30-45 minutes",
   "goals": ["Goal 1", "Goal 2", "Goal 3"]
 }}
-
-Structure the lesson with:
-# {focus.title()} – {skill.title()} Level Lesson
-
-## Goals Today
-- Goal 1
-- Goal 2
-- Goal 3
-
-## Warm-Up (5 mins)
-Brief warm-up with tempo
-
-## Core Idea
-Explain the concept clearly with 1–2 examples
-
-## 3 Exercises
-Include tabs/fingerings
-
-Return ONLY the JSON, no other text.
+Return ONLY valid JSON.
 """
-
         text = await self._call_grok(prompt, max_tokens=4000)
-        if not text:
-            raise ValueError("Empty response from Grok")
-            
         data = self._extract_json(text)
         if not data or "lesson" not in data:
             raise ValueError("Grok did not return valid lesson")
-        
         return data
+
 
 grok_service = GrokService()
