@@ -1,6 +1,8 @@
 export const NAVIGATION_PATHS = {
+  // Dashboard
+  'Dashboard': '/dashboard',
+
   // Learn / Practice - All go to workflow builder with different steps
-  "dahsboard": "/dashboard",
   'Skill Level': '/builder/skill-level',
   'Instrument Focus': '/builder/instrument-focus', 
   'Lesson Type': '/builder/lesson-type',
