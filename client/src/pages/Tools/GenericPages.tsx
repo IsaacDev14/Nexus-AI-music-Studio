@@ -431,10 +431,10 @@ export const Shortcuts: React.FC = () => (
             <div className="text-right">Key Binding</div>
          </div>
          {[
-            { key: 'Space', action: 'Toggle Playback / Metronome' },
-            { key: '⌘ + K', action: 'Global Search' },
-            { key: 'Shift + N', action: 'Create New Session' },
-            { key: 'Esc', action: 'Close Panels / Modals' },
+            { key: 'M', action: 'Open Metronome' },
+            { key: 'T', action: 'Open Tuner' },
+            { key: 'P', action: 'Open Practice Log' },
+            { key: 'H', action: 'Go to Dashboard' },
             { key: 'R', action: 'Quick Record Toggle' },
             { key: 'M', action: 'Mute All Audio' },
          ].map((s, i) => (
