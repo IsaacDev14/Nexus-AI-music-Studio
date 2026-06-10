@@ -118,7 +118,7 @@ const AudioAnalyzer: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <StatCard icon={ClockIcon} label="Tempo" value={`${result.bpm} BPM`} />
-                <StatCard icon={MusicalNoteIcon} label="Key" value={result.key} sub={`${Math.round(result.keyConfidence * 100)}% confidence`} />
+                <StatCard icon={MusicalNoteIcon} label="Key" value={`${result.key} (${result.mode})`} sub={`${Math.round(result.keyConfidence * 100)}% confidence`} />
                 <StatCard icon={PlayIcon} label="Duration" value={`${result.durationSeconds}s`} />
               </div>
 
