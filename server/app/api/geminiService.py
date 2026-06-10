@@ -26,7 +26,7 @@ class GeminiMusicService:
         self.available = False
 
         if not GEMINI_API_KEY:
-            print("❌ GEMINI_API_KEY is missing in .env file.")
+            print("GEMINI_API_KEY is missing in .env file.")
             return
 
         try:
@@ -55,10 +55,10 @@ class GeminiMusicService:
 
             # We don't instantiate a specific model here anymore, we do it per request
             self.available = True 
-            print(f"✓ Gemini Service Initialized (Fallback Chain: {', '.join(FALLBACK_MODELS)})")
+            print(f"Gemini Service Initialized (Fallback Chain: {', '.join(FALLBACK_MODELS)})")
 
         except Exception as e:
-            print(f"❌ Gemini initialization error: {e}")
+            print(f"Gemini initialization error: {e}")
 
     async def _generate_json(self, prompt: str) -> dict:
         """
@@ -102,21 +102,21 @@ class GeminiMusicService:
                 
                 # LOGIC: If it's a connection/quota/model error, try the next one.
                 if "429" in error_str or "Quota" in error_str:
-                    print(f"⚠ {model_name} rate limited. Switching...")
+                    print(f"{model_name} rate limited. Switching...")
                     continue 
                 elif "404" in error_str or "not found" in error_str.lower():
-                    print(f"⚠ {model_name} not found (check SDK version). Switching...")
+                    print(f"{model_name} not found (check SDK version). Switching...")
                     continue
                 elif "503" in error_str or "Overloaded" in error_str:
-                    print(f"⚠ {model_name} overloaded. Switching...")
+                    print(f"{model_name} overloaded. Switching...")
                     continue
                 else:
                     # If it's a parsing/logic error, don't switch models, just fail
-                    print(f"❌ Error with {model_name}: {e}")
+                    print(f"Error with {model_name}: {e}")
                     raise e 
 
         # If we get here, ALL models failed
-        print("❌ All Gemini models exhausted.")
+        print("All Gemini models exhausted.")
         raise Exception("Service busy. Please try again in 1 minute.")
 
     # ---------------------------
