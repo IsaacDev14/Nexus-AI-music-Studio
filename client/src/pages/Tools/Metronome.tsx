@@ -8,8 +8,7 @@ const Metronome: React.FC = () => {
   const [beatsPerMeasure, setBeatsPerMeasure] = useState(4);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [volume, setVolume] = useState(0.7);
-  
-  // Tap Tempo State
+  const [syncedFromAnalysis, setSyncedFromAnalysis] = useState(false);
   const lastTapRef = useRef<number>(0);
   
   // Audio refs
@@ -25,7 +24,10 @@ const Metronome: React.FC = () => {
 
   useEffect(() => {
     const synced = consumeMetronomeBpmFromAnalysis();
-    if (synced) setBpm(synced);
+    if (synced) {
+      setBpm(synced);
+      setSyncedFromAnalysis(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -153,6 +155,12 @@ const Metronome: React.FC = () => {
         <div className="absolute inset-0 opacity-20 pointer-events-none" 
              style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
         </div>
+
+        {syncedFromAnalysis && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 bg-indigo-600 text-white text-sm px-4 py-2 rounded-full shadow-lg">
+            Tempo synced from Track Analyzer ({bpm} BPM)
+          </div>
+        )}
 
         {/* --- THE RHYTHM MACHINE --- */}
         <div className="relative bg-stone-800 rounded-3xl shadow-[0_30px_80px_rgba(0,0,0,0.8)] border-b-8 border-stone-950 w-full max-w-2xl overflow-hidden">
