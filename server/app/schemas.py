@@ -120,3 +120,24 @@ class AIStatusResult(BaseModel):
     gemini_available: bool
     grok_available: bool
     status: str
+
+# --- Audio Analysis ---
+class DetectedChord(BaseModel):
+    chord: str
+    time: float
+    confidence: float
+
+class AudioAnalysisResult(BaseModel):
+    filename: str
+    bpm: float
+    key: str
+    mode: str
+    keyConfidence: float
+    durationSeconds: float
+    detectedChords: List[DetectedChord] = Field(default_factory=list)
+    chordSummary: List[str] = Field(default_factory=list)
+    songTitle: Optional[str] = None
+    songArtist: Optional[str] = None
+    songAlbum: Optional[str] = None
+    auddMatched: bool = False
+    aiArrangement: Optional[dict] = None
