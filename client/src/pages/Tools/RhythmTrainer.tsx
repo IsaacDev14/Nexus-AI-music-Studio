@@ -45,6 +45,7 @@ const RhythmTrainer: React.FC = () => {
        {/* Main Content - Scrollable */}
        <div className="flex-1 overflow-y-auto">
           <div className="p-4 max-w-6xl mx-auto">
+            {error && <div className="mb-4"><ErrorBanner message={error} onDismiss={() => setError('')} /></div>}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                
                {/* Left Control Panel */}
