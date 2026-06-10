@@ -1,4 +1,4 @@
-import { api } from './apiService';
+import { api, getErrorMessage } from './apiService';
 
 export interface DetectedChord {
   chord: string;
@@ -26,15 +26,18 @@ export async function analyzeUpload(file: File, onProgress?: (pct: number) => vo
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await api.post<AudioAnalysisResult>('/analyze/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-    onUploadProgress: (e) => {
-      if (onProgress && e.total) {
-        onProgress(Math.round((e.loaded / e.total) * 100));
-      }
-    },
-    timeout: 180000,
-  });
-
-  return res.data;
+  try {
+    const res = await api.post<AudioAnalysisResult>('/analyze/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => {
+        if (onProgress && e.total) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      },
+      timeout: 180000,
+    });
+    return res.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'Analysis failed. Check backend, ffmpeg, and librosa.'));
+  }
 }
