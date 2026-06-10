@@ -145,7 +145,7 @@ alembic upgrade head
 
 6. **Access Application:**
 
-* Frontend: `http://localhost:3000`
+* Frontend: `http://localhost:5173`
 * Backend: `http://127.0.0.1:8000`
 
 ---
