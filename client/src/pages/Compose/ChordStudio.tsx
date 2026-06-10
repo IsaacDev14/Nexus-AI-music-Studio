@@ -423,8 +423,9 @@ const ChordStudio: React.FC = () => {
         const keyRoot = analysis.key.split(' ')[0];
         setSelectedKey(keyRoot);
       }
-    } catch {
-      setError('Upload analysis failed. Ensure backend is running with ffmpeg and librosa.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Upload analysis failed. Ensure backend is running with ffmpeg and librosa.';
+      setError(msg);
     } finally {
       setLoadingUpload(false);
     }
