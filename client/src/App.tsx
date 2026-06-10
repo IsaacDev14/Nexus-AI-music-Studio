@@ -19,6 +19,7 @@ import ImprovAssistant from './pages/Tools/ImprovAssistant';
 import Songwriter from './pages/Tools/SongWriter';
 import JamHistory from './pages/Tools/JamHistory';
 import PracticeLog from './pages/Tools/PracticeLog';
+import AudioAnalyzer from './pages/Tools/AudioAnalyzer';
 import { Achievements, DataExport, Shortcuts } from './pages/Tools/GenericPages';
 
 function AppRoutes() {
@@ -38,6 +39,7 @@ function AppRoutes() {
           <Route path={NAVIGATION_PATHS['Metronome']} element={<Metronome />} />
           <Route path={NAVIGATION_PATHS['Backing Track Generator']} element={<BackingTrack />} />
           <Route path={NAVIGATION_PATHS['Rhythm Practice']} element={<RhythmTrainer />} />
+          <Route path={NAVIGATION_PATHS['Track Analyzer']} element={<AudioAnalyzer />} />
           <Route path={NAVIGATION_PATHS['Tuner Calibration']} element={<TunerCalibration/>} />
           <Route path={NAVIGATION_PATHS['Chord Progression Generator']} element={<ChordStudio />} />
           <Route path={NAVIGATION_PATHS['Melody Suggestions']} element={<MelodyGenerator />} />

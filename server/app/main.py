@@ -24,6 +24,7 @@ app.add_middleware(
 
 
 app.include_router(ai.router)
+app.include_router(analyze.router)
 
 # --- YOUR PRINT STATEMENTS ---
 @app.on_event("startup")
@@ -50,5 +51,5 @@ async def api_info():
     return {
         "name": "Nexus AI Music Studio API",
         "version": "2.6.0",
-        "endpoints": ["/ai/chords", "/ai/melody", "/ai/lyrics", "/ai/lesson", "/ai/status"],
+        "endpoints": ["/ai/chords", "/ai/melody", "/ai/lyrics", "/ai/lesson", "/ai/status", "/analyze/upload"],
     }

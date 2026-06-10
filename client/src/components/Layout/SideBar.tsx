@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { NAVIGATION_PATHS } from '../../utils/constants';
 import {
   MusicalNoteIcon, PlayIcon, BookOpenIcon, FlagIcon, ClockIcon, CubeIcon, 
-  Bars3Icon, ChartBarIcon, CpuChipIcon, PuzzlePieceIcon
+  Bars3Icon, ChartBarIcon, CpuChipIcon, PuzzlePieceIcon, ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
 
 // --- LESSONS/PRACTICE ---
@@ -31,6 +31,7 @@ const NAVIGATION_DATA = [
       { label: 'Backing Track Generator', icon: PlayIcon },
       { label: 'Tuner Calibration', icon: PuzzlePieceIcon }, 
       { label: 'Rhythm Practice', icon: Bars3Icon },
+      { label: 'Track Analyzer', icon: ArrowUpTrayIcon },
     ],
   },
   {

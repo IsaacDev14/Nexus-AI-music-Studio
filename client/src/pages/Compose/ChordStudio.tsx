@@ -3,8 +3,12 @@
 
 // src/pages/Compose/ChordStudio.tsx
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { aiApi, type FullDisplayData } from '../../api/apiService';
 import ErrorBanner from '../../components/UI/ErrorBanner';
+import FileUploadZone from '../../components/Music/FileUploadZone';
+import { analyzeUpload, type AudioAnalysisResult } from '../../api/analyzeService';
+import { saveLastAnalysis } from '../../utils/analysisStorage';
 import { 
   MagnifyingGlassIcon, 
   SparklesIcon, 
@@ -13,7 +17,8 @@ import {
   ChevronUpIcon,
   MusicalNoteIcon,
   HashtagIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  ArrowUpTrayIcon,
 } from '@heroicons/react/24/outline';
 
 // ==========================================
@@ -313,8 +318,39 @@ const ChordBox: React.FC<{ chord: string; instrument: Instrument; isAnimating?: 
 // 5. MAIN PAGE COMPONENT
 // ==========================================
 
+// Helper: map analysis result to chord studio display format
+const analysisToDisplay = (a: AudioAnalysisResult): FullDisplayData => {
+  const ai = a.aiArrangement as Record<string, unknown> | null | undefined;
+  if (ai?.songTitle) {
+    const rawProg = (ai.progressionSummary as string[]) || a.chordSummary;
+    return {
+      songTitle: String(ai.songTitle),
+      artist: String(ai.artist || a.songArtist || 'Unknown'),
+      key: String(ai.key || a.key),
+      tuning: String(ai.tuning || 'E A D G B E'),
+      progression: rawProg.map((c: string) => ({ chord: c, duration: 4 })),
+      tablature: Array.isArray(ai.tablature) ? ai.tablature : [],
+      chordDiagrams: Array.isArray(ai.chordDiagrams) ? ai.chordDiagrams : [],
+      substitutions: Array.isArray(ai.substitutions) ? ai.substitutions : [],
+      practiceTips: Array.isArray(ai.practiceTips) ? ai.practiceTips : [`Detected ${a.bpm} BPM`],
+    };
+  }
+  return {
+    songTitle: a.songTitle || a.filename,
+    artist: a.songArtist || 'Uploaded Track',
+    key: a.key,
+    tuning: 'E A D G B E',
+    progression: a.chordSummary.map((c) => ({ chord: c, duration: 4 })),
+    tablature: [],
+    chordDiagrams: [],
+    substitutions: [],
+    practiceTips: [`Detected tempo: ${a.bpm} BPM`, `Key confidence: ${Math.round(a.keyConfidence * 100)}%`],
+  };
+};
+
 const ChordStudio: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'search' | 'compose'>('search');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<'search' | 'compose' | 'upload'>('search');
   const [selectedInstrument, setSelectedInstrument] = useState<Instrument>('Guitar');
   const [selectedKey, setSelectedKey] = useState('Original');
   const [notationMode, setNotationMode] = useState<NotationMode>('Standard');
@@ -341,21 +377,58 @@ const ChordStudio: React.FC = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState('');
+  const [loadingUpload, setLoadingUpload] = useState(false);
+  const [uploadAnalysis, setUploadAnalysis] = useState<AudioAnalysisResult | null>(null);
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const progressIntervalRef = useRef<any>(null);
 
   // Extract chords logic
   const extractedChords = useMemo(() => {
-    const data = activeTab === 'search' ? songResult : composeResult;
-    if (!data?.progression) return [];
+    const data = activeTab === 'search' ? songResult : activeTab === 'upload' ? (uploadAnalysis ? analysisToDisplay(uploadAnalysis) : null) : composeResult;
+    if (!data?.progression?.length) {
+      if (activeTab === 'upload' && uploadAnalysis?.chordSummary?.length) {
+        return [...new Set(uploadAnalysis.chordSummary)];
+      }
+      return [];
+    }
     
     // Regex matches complex chords like G/B, Bbsus4, C#m7
     const chordRegex = /\b[A-G][#b]?(?:m|maj|dim|aug|sus|add)?(?:7|9|11|13|6)?(?:(?:\/)[A-G][#b]?)?\b/g;
     const allChords = data.progression.map((p: any) => p.chord).join(' ');
     const found = allChords.match(chordRegex) || [];
     return [...new Set(found)];
-  }, [songResult, composeResult, activeTab]);
+  }, [songResult, composeResult, uploadAnalysis, activeTab]);
+
+  useEffect(() => {
+    const state = location.state as { fromAnalysis?: AudioAnalysisResult } | null;
+    if (state?.fromAnalysis) {
+      setActiveTab('upload');
+      setUploadAnalysis(state.fromAnalysis);
+      setSongResult(analysisToDisplay(state.fromAnalysis));
+    }
+  }, [location.state]);
+
+  const handleUpload = async (file: File) => {
+    setLoadingUpload(true);
+    setError('');
+    setUploadAnalysis(null);
+    setSongResult(null);
+    try {
+      const analysis = await analyzeUpload(file);
+      setUploadAnalysis(analysis);
+      saveLastAnalysis(analysis);
+      setSongResult(analysisToDisplay(analysis));
+      if (analysis.key && analysis.key !== 'Original') {
+        const keyRoot = analysis.key.split(' ')[0];
+        setSelectedKey(keyRoot);
+      }
+    } catch {
+      setError('Upload analysis failed. Ensure backend is running with ffmpeg and librosa.');
+    } finally {
+      setLoadingUpload(false);
+    }
+  };
 
   useEffect(() => {
     if (extractedChords.length > 0) {
@@ -443,7 +516,7 @@ const ChordStudio: React.FC = () => {
   };
 
   const handlePlay = async () => {
-    const data = activeTab === 'search' ? songResult : composeResult;
+    const data = activeTab === 'search' ? songResult : activeTab === 'upload' ? (uploadAnalysis ? analysisToDisplay(uploadAnalysis) : null) : composeResult;
     if (isPlaying || !data?.progression) return;
     
     if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -509,6 +582,7 @@ const ChordStudio: React.FC = () => {
          </div>
          <div className="bg-gray-100 p-1 rounded-lg flex text-sm font-medium">
             <button onClick={() => setActiveTab('search')} className={`px-3 py-1.5 rounded ${activeTab === 'search' ? 'bg-white shadow' : 'text-gray-500'}`}>Search</button>
+            <button onClick={() => setActiveTab('upload')} className={`px-3 py-1.5 rounded ${activeTab === 'upload' ? 'bg-white shadow' : 'text-gray-500'}`}>Upload</button>
             <button onClick={() => setActiveTab('compose')} className={`px-3 py-1.5 rounded ${activeTab === 'compose' ? 'bg-white shadow' : 'text-gray-500'}`}>Compose</button>
          </div>
       </header>
@@ -558,6 +632,38 @@ const ChordStudio: React.FC = () => {
                <ErrorBanner message={error} onDismiss={() => setError('')} />
             </div>
          )}
+         {activeTab === 'upload' && (
+            <div className="max-w-4xl mx-auto space-y-6">
+               {!loadingUpload && !uploadAnalysis && (
+                  <FileUploadZone onFileSelected={handleUpload} label="Upload audio or video to analyze" />
+               )}
+               {loadingUpload && (
+                  <div className="bg-white p-8 rounded-xl border text-center">
+                     <ComposerLoader />
+                     <p className="text-sm text-gray-500 mt-4">Detecting BPM, key, and chords...</p>
+                  </div>
+               )}
+               {uploadAnalysis && songResult && (
+                  <div className="space-y-4">
+                     <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg">
+                        <div>
+                           <h2 className="font-bold text-xl text-gray-800">{songResult.songTitle}</h2>
+                           <p className="text-sm text-gray-500">{songResult.artist} - {uploadAnalysis.bpm} BPM - {songResult.key}</p>
+                        </div>
+                        <button onClick={handlePlay} className="p-2 bg-indigo-600 text-white rounded-full shadow hover:scale-105 transition-transform"><PlayCircleIcon className="w-6 h-6"/></button>
+                     </div>
+                     <div className="bg-blue-50 text-blue-800 p-4 rounded-lg text-sm border border-blue-100">
+                        Detected chords: {uploadAnalysis.chordSummary.join(' - ') || 'None'}.
+                        {uploadAnalysis.auddMatched && ' Song matched via AudD with AI chord sheet.'}
+                     </div>
+                     <div className="bg-white border rounded-xl p-6 shadow-sm min-h-[300px] overflow-x-auto">
+                        {renderChordSheet(formatChordSheet(songResult), songResult.key)}
+                     </div>
+                  </div>
+               )}
+            </div>
+         )}
+
          {activeTab === 'search' && (
             <div className="max-w-4xl mx-auto space-y-6">
                <form onSubmit={handleSearch} className="bg-white p-2 rounded-xl shadow-sm border flex gap-2">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayIcon, PauseIcon, HandRaisedIcon, SpeakerWaveIcon, MusicalNoteIcon } from '@heroicons/react/24/solid';
+import { consumeMetronomeBpmFromAnalysis } from '../../utils/analysisStorage';
 
 const Metronome: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -21,6 +22,11 @@ const Metronome: React.FC = () => {
   // Animation Ref for visual sync
   const visualQueueRef = useRef<{ note: number; time: number }[]>([]);
   const animationFrameRef = useRef<number>(0);
+
+  useEffect(() => {
+    const synced = consumeMetronomeBpmFromAnalysis();
+    if (synced) setBpm(synced);
+  }, []);
 
   useEffect(() => {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;

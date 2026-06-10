@@ -104,6 +104,7 @@ const Dashboard: React.FC = () => {
             <QuickCard title="Chord Studio" desc="AI chord progressions" icon={BookOpenIcon} path={NAVIGATION_PATHS['Chord Progression Generator']} />
             <QuickCard title="Melody Generator" desc="Motif suggestions" icon={MusicalNoteIcon} path={NAVIGATION_PATHS['Melody Suggestions']} />
             <QuickCard title="Songwriter" desc="Lyrics and structure" icon={BookOpenIcon} path={NAVIGATION_PATHS['AI Songwriting']} />
+            <QuickCard title="Track Analyzer" desc="Upload audio or video for BPM, key, chords" icon={MusicalNoteIcon} path={NAVIGATION_PATHS['Track Analyzer']} />
             <QuickCard title="Lesson Builder" desc="Personalized lessons" icon={BookOpenIcon} path={NAVIGATION_PATHS['Generate Lesson']} />
           </div>
 

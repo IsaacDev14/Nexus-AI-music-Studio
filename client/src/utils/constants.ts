@@ -15,6 +15,7 @@ export const NAVIGATION_PATHS = {
   'Backing Track Generator': '/backing-track',
   'Tuner Calibration': '/tuner-calibration', 
   'Rhythm Practice': '/rhythm-practice',
+  'Track Analyzer': '/track-analyzer',
   
   // Compose / Jam
   'Chord Progression Generator': '/chord-progression',
