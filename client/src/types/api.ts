@@ -7,3 +7,9 @@ export interface HealthResponse {
   status: string;
   message: string;
 }
+
+export interface APIInfoResponse {
+  name: string;
+  version: string;
+  endpoints: string[];
+}
