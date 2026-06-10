@@ -206,7 +206,7 @@ export const aiApi = {
       return res.data.lyrics || '[No lyrics generated]';
     } catch (error) {
       console.error('Error generating lyrics:', error);
-      throw new Error('Failed to generate lyrics. Please try again.');
+      throw new Error(getErrorMessage(error, 'Failed to generate lyrics. Please try again.'));
     }
   },
 
