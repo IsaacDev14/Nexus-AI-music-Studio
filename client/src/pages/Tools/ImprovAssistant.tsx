@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { getImprovTips } from '../../api/apiService';
+import ErrorBanner from '../../components/UI/ErrorBanner';
 import { 
   PaperAirplaneIcon, 
   SparklesIcon, 
@@ -16,8 +17,21 @@ const ImprovAssistant: React.FC = () => {
   const [lastQuery, setLastQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
+  const [error, setError] = useState('');
   
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const fetchTips = async (query: string) => {
+    setError('');
+    try {
+      const result = await getImprovTips(query);
+      setResponse(result);
+    } catch {
+      setError('Failed to get improv tips. Check that the backend is running.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAsk = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -26,26 +40,19 @@ const ImprovAssistant: React.FC = () => {
     setShowIntro(false);
     setLoading(true);
     setLastQuery(input);
-    setResponse(''); // Clear previous response
-    
-    const result = await getImprovTips(input);
-    setResponse(result);
-    setLoading(false);
+    setResponse('');
+    const query = input;
     setInput('');
+    await fetchTips(query);
   };
 
   const handleQuickPrompt = (prompt: string) => {
-    setInput(prompt);
     setShowIntro(false);
     setLoading(true);
     setLastQuery(prompt);
     setResponse('');
-    
-    getImprovTips(prompt).then(result => {
-        setResponse(result);
-        setLoading(false);
-    });
     setInput('');
+    fetchTips(prompt);
   };
 
   // Auto-scroll to bottom
