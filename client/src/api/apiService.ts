@@ -186,7 +186,7 @@ export const aiApi = {
       return res.data.melody || 'C4 E4 G4 C5 | B4 G4 E4 C4';
     } catch (error) {
       console.error('Error generating melody suggestion:', error);
-      throw new Error('Failed to generate melody suggestion. Please try again.');
+      throw new Error(getErrorMessage(error, 'Failed to generate melody suggestion. Please try again.'));
     }
   },
 
