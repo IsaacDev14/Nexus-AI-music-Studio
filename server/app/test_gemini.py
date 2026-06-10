@@ -34,7 +34,7 @@ async def test_service():
         print(f"   Key: {result['key']}")
         print(f"   Progression: {result['progression']}")
     except Exception as e:
-        print(f"❌ Error generating chords: {e}")
+        print(f"Error generating chords: {e}")
 
 if __name__ == "__main__":
     asyncio.run(test_service())
