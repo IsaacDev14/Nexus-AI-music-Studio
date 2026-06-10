@@ -234,7 +234,7 @@ export const aiApi = {
       return res.data.lesson;
     } catch (error) {
       console.error('Error generating lesson:', error);
-      throw new Error('Failed to generate lesson. Please check if the backend server is running.');
+      throw new Error(getErrorMessage(error, 'Failed to generate lesson. Please check if the backend server is running.'));
     }
   },
 };
