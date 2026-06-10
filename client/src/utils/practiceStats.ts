@@ -101,3 +101,8 @@ export function getSessionsByInstrument(sessions: PracticeSession[]): Record<str
     return acc;
   }, {});
 }
+
+export function getAverageSessionDuration(sessions: PracticeSession[]): number {
+  if (sessions.length === 0) return 0;
+  return Math.round(getTotalPracticeMinutes(sessions) / sessions.length);
+}
