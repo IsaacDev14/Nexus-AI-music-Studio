@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
 import { generateRhythmPattern } from '../../api/apiService';
 import { PlayIcon, ArrowPathIcon, CpuChipIcon, Square2StackIcon } from '@heroicons/react/24/solid';
+import ErrorBanner from '../../components/UI/ErrorBanner';
 
 const RhythmTrainer: React.FC = () => {
   const [timeSig, setTimeSig] = useState('4/4');
   const [level, setLevel] = useState('Beginner');
   const [pattern, setPattern] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     setLoading(true);
-    const result = await generateRhythmPattern(timeSig, level);
-    setPattern(result);
-    setLoading(false);
+    setError('');
+    try {
+      const result = await generateRhythmPattern(timeSig, level);
+      setPattern(result);
+    } catch {
+      setError('Failed to generate rhythm pattern. Check that the backend is running.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -25,8 +33,8 @@ const RhythmTrainer: React.FC = () => {
                 <Square2StackIcon className="w-5 h-5" />
              </div>
              <div>
-                <h1 className="text-lg font-bold text-gray-900">Rhythm Core</h1>
-                <p className="text-xs text-gray-500 font-mono">NEURAL PATTERN GENERATOR</p>
+                <h1 className="text-lg font-bold text-gray-900">Rhythm Trainer</h1>
+                <p className="text-xs text-gray-500 font-mono">Pattern Generator</p>
              </div>
           </div>
           <div className="text-xs font-mono text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
