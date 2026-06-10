@@ -94,3 +94,10 @@ export function downloadFile(content: string, filename: string, mimeType: string
   link.click();
   URL.revokeObjectURL(url);
 }
+
+export function getSessionsByInstrument(sessions: PracticeSession[]): Record<string, number> {
+  return sessions.reduce<Record<string, number>>((acc, s) => {
+    acc[s.instrument] = (acc[s.instrument] || 0) + 1;
+    return acc;
+  }, {});
+}
