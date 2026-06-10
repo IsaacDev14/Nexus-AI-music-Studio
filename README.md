@@ -1,6 +1,6 @@
 # Nexus AI Music Studio
 
-**Version:** 2.5.0
+**Version:** 2.6.0
 **Tech Stack:** React | TypeScript | Tailwind CSS | Python FastAPI | PostgreSQL
 **AI Integration:** Google Gemini 2.5 Flash, Grok API
 **License:** MIT
