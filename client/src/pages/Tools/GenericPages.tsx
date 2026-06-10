@@ -24,6 +24,7 @@ import {
   exportSessionsAsJSON,
   exportSessionsAsCSV,
   downloadFile,
+  getPracticeStreak,
 } from '../../utils/practiceStats';
 
 // --- SETTINGS / PROFILE ---
@@ -343,7 +344,7 @@ export const TunerCalibration: React.FC = () => {
 // --- ACHIEVEMENTS ---
 export const Achievements: React.FC = () => {
    const sessionCount = loadPracticeSessions().length;
-   const streak = require('../../utils/practiceStats').getPracticeStreak(loadPracticeSessions());
+   const streak = getPracticeStreak(loadPracticeSessions());
    return (
    <div className="max-w-5xl mx-auto p-8">
       <div className="mb-10 flex items-center justify-between border-b border-gray-200 pb-6">
