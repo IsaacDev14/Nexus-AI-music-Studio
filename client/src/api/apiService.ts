@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios';
 
-function getErrorMessage(error: unknown, fallback: string): string {
+export function getErrorMessage(error: unknown, fallback: string): string {
   if (axios.isAxiosError(error)) {
     const axErr = error as AxiosError<{ detail?: string }>;
     return axErr.response?.data?.detail || axErr.message || fallback;
