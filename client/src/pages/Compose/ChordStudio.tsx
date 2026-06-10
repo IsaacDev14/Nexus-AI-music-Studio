@@ -4,6 +4,7 @@
 // src/pages/Compose/ChordStudio.tsx
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { aiApi, type FullDisplayData } from '../../api/apiService';
+import ErrorBanner from '../../components/UI/ErrorBanner';
 import { 
   MagnifyingGlassIcon, 
   SparklesIcon, 
@@ -339,6 +340,7 @@ const ChordStudio: React.FC = () => {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState('');
   
   const audioCtxRef = useRef<AudioContext | null>(null);
   const progressIntervalRef = useRef<any>(null);
@@ -373,6 +375,7 @@ const ChordStudio: React.FC = () => {
 
   const handleCompose = async () => {
     setLoadingCompose(true);
+    setError('');
     simulateProgress();
     try {
       const result = await aiApi.generateSongArrangement({
@@ -389,7 +392,8 @@ const ChordStudio: React.FC = () => {
         setLoadingCompose(false);
         setComposeProgress(0);
       }, 500);
-    } catch (error) {
+    } catch {
+      setError('Failed to generate chord progression. Check that the backend is running.');
       setLoadingCompose(false);
     }
   };
@@ -401,6 +405,7 @@ const ChordStudio: React.FC = () => {
     setSearchStage('searching');
     setSongResult(null);
     setTheoryAnalysis('');
+    setError('');
     
     try {
       const result = await aiApi.generateSongArrangement({
@@ -415,7 +420,8 @@ const ChordStudio: React.FC = () => {
       await new Promise(r => setTimeout(r, 800)); 
       setSongResult(result);
       setSearchStage('idle');
-    } catch (error) {
+    } catch {
+      setError('Failed to find song arrangement. Check that the backend is running.');
       setSearchStage('idle');
       setLoadingSearch(false);
     } finally {
@@ -547,6 +553,11 @@ const ChordStudio: React.FC = () => {
 
       {/* SCROLLABLE CONTENT */}
       <div className="flex-1 overflow-y-auto p-4 pb-24">
+         {error && (
+            <div className="max-w-4xl mx-auto mb-4">
+               <ErrorBanner message={error} onDismiss={() => setError('')} />
+            </div>
+         )}
          {activeTab === 'search' && (
             <div className="max-w-4xl mx-auto space-y-6">
                <form onSubmit={handleSearch} className="bg-white p-2 rounded-xl shadow-sm border flex gap-2">
