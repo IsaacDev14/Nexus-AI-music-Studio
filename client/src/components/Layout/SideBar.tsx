@@ -9,6 +9,12 @@ import {
 // --- LESSONS/PRACTICE ---
 const NAVIGATION_DATA = [
   {
+    title: 'HOME',
+    items: [
+      { label: 'Dashboard', icon: ChartBarIcon },
+    ],
+  },
+  {
     title: 'LEARN / PRACTICE',
     items: [
       { label: 'Skill Level', icon: ChartBarIcon }, 
@@ -99,7 +105,7 @@ const SideBar = () => {
           </div>
           <div>
              <div className="font-bold text-sm tracking-tight text-gray-900">NEXUS STUDIO</div>
-             <div className="text-[10px] text-indigo-500 dark:text-cyan-500 font-mono">AI SYSTEM ONLINE</div>
+             <div className="text-[10px] text-indigo-500 dark:text-cyan-500 font-mono">MUSIC STUDIO</div>
           </div>
         </div>
       </div>
