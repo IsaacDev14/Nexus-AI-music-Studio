@@ -116,7 +116,7 @@ cd ai-music-studio
 ```bash
 cd client
 npm install
-npm start
+npm run dev
 ```
 
 3. **Backend Setup:**
