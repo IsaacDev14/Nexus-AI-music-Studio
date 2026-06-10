@@ -75,6 +75,7 @@ const MelodyGenerator: React.FC = () => {
     <div className="h-screen w-screen flex flex-col md:flex-row bg-white overflow-hidden">
       
       {/* LEFT SIDEBAR CONTROLS */}
+      {error && <div className="p-2"><ErrorBanner message={error} onDismiss={() => setError('')} /></div>}
       <div className="w-full md:w-80 bg-white border-r border-gray-200 flex flex-col z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] h-full">
         
         {/* Sidebar Header */}
