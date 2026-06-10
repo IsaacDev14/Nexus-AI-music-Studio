@@ -7,7 +7,8 @@ export interface PracticeSession {
   notes: string;
 }
 
-const STORAGE_KEY = 'music_studio_logs';
+import { STORAGE_KEYS } from './storageKeys';
+const STORAGE_KEY = STORAGE_KEYS.PRACTICE_LOGS;
 
 export function loadPracticeSessions(): PracticeSession[] {
   try {
