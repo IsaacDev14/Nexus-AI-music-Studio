@@ -346,7 +346,7 @@ export const Achievements: React.FC = () => (
       <div className="mb-10 flex items-center justify-between border-b border-gray-200 pb-6">
          <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Badges & Milestones</h1>
-            <p className="text-gray-500 text-sm mt-1 font-mono">USER_PROGRESS: 15% COMPLETE</p>
+            <p className="text-gray-500 text-sm mt-1 font-mono">{loadPracticeSessions().length} sessions logged</p>
          </div>
          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-yellow-50 rounded border border-yellow-100">
              <TrophyIcon className="w-5 h-5 text-yellow-600" />
