@@ -87,6 +87,7 @@ const ImprovAssistant: React.FC = () => {
 
       {/* MAIN CHAT AREA */}
       <div className="flex-1 overflow-hidden relative flex flex-col min-h-0">
+        {error && <div className="px-4 pt-2"><ErrorBanner message={error} onDismiss={() => setError('')} /></div>}
         <div className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth min-h-0" ref={chatContainerRef}>
            <div className="w-full max-w-6xl mx-auto space-y-8 min-w-0">
               
