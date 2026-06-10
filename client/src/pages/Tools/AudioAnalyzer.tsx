@@ -117,7 +117,7 @@ const AudioAnalyzer: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <StatCard icon={ClockIcon} label="Tempo" value={`${result.bpm} BPM`} />
+                <StatCard icon={ClockIcon} label="Tempo" value={result.bpm > 0 ? `${result.bpm} BPM` : 'N/A'} sub={result.bpm <= 0 ? 'Could not detect steady beat' : undefined} />
                 <StatCard icon={MusicalNoteIcon} label="Key" value={`${result.key} (${result.mode})`} sub={`${Math.round(result.keyConfidence * 100)}% confidence`} />
                 <StatCard icon={PlayIcon} label="Duration" value={`${result.durationSeconds}s`} />
               </div>
@@ -158,8 +158,8 @@ const AudioAnalyzer: React.FC = () => {
               )}
 
               <div className="flex flex-wrap gap-3">
-                <button onClick={syncMetronome} className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700">
-                  Sync Metronome to {result.bpm} BPM
+                <button onClick={syncMetronome} disabled={result.bpm <= 0} className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Sync Metronome to {result.bpm > 0 ? `${result.bpm} BPM` : 'tempo'}
                 </button>
                 <button onClick={openInChordStudio} className="px-5 py-2.5 bg-white border border-gray-300 rounded-lg font-medium hover:bg-gray-50">
                   Open in Chord Studio
