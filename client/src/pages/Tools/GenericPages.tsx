@@ -341,7 +341,10 @@ export const TunerCalibration: React.FC = () => {
 };
 
 // --- ACHIEVEMENTS ---
-export const Achievements: React.FC = () => (
+export const Achievements: React.FC = () => {
+   const sessionCount = loadPracticeSessions().length;
+   const streak = require('../../utils/practiceStats').getPracticeStreak(loadPracticeSessions());
+   return (
    <div className="max-w-5xl mx-auto p-8">
       <div className="mb-10 flex items-center justify-between border-b border-gray-200 pb-6">
          <div>
@@ -356,8 +359,8 @@ export const Achievements: React.FC = () => (
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          {[
-            { title: 'Initiate', desc: 'Logged first session', unlocked: true, icon: SignalIcon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
-            { title: 'Consistency', desc: '7 day streak active', unlocked: true, icon: ArrowPathIcon, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
+            { title: 'Initiate', desc: 'Logged first session', unlocked: sessionCount >= 1, icon: SignalIcon, color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-100' },
+            { title: 'Consistency', desc: '7 day streak active', unlocked: streak >= 7, icon: ArrowPathIcon, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-100' },
             { title: 'Composer', desc: 'Wrote 5 songs with AI', unlocked: false, icon: MusicalNoteIcon, color: 'text-gray-400', bg: 'bg-gray-50', border: 'border-gray-200' },
             { title: 'Metronome', desc: '1 hour rhythm practice', unlocked: false, icon: CpuChipIcon, color: 'text-gray-400', bg: 'bg-gray-50', border: 'border-gray-200' },
             { title: 'Analyst', desc: 'Analyzed 10 songs', unlocked: false, icon: BookOpenIcon, color: 'text-gray-400', bg: 'bg-gray-50', border: 'border-gray-200' },
@@ -376,7 +379,8 @@ export const Achievements: React.FC = () => (
          ))}
       </div>
    </div>
-);
+   );
+};
 
 // --- EXPORT ---
 export const DataExport: React.FC = () => {
@@ -453,4 +457,5 @@ export const Shortcuts: React.FC = () => (
          ))}
       </div>
    </div>
-);
+   );
+};
