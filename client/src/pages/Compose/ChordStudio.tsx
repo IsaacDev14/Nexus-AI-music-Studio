@@ -8,7 +8,7 @@ import { aiApi, type FullDisplayData } from '../../api/apiService';
 import ErrorBanner from '../../components/UI/ErrorBanner';
 import FileUploadZone from '../../components/Music/FileUploadZone';
 import { analyzeUpload, type AudioAnalysisResult } from '../../api/analyzeService';
-import { saveLastAnalysis } from '../../utils/analysisStorage';
+import { saveLastAnalysis, loadLastAnalysis } from '../../utils/analysisStorage';
 import { 
   MagnifyingGlassIcon, 
   SparklesIcon, 
@@ -406,6 +406,12 @@ const ChordStudio: React.FC = () => {
       setActiveTab('upload');
       setUploadAnalysis(state.fromAnalysis);
       setSongResult(analysisToDisplay(state.fromAnalysis));
+      return;
+    }
+    const cached = loadLastAnalysis();
+    if (cached) {
+      setUploadAnalysis(cached);
+      setSongResult(analysisToDisplay(cached));
     }
   }, [location.state]);
 
