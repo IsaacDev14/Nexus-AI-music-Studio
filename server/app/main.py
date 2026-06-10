@@ -44,3 +44,10 @@ async def health_check():
 @app.get("/test-cors")
 async def test_cors():
     return {"message": "CORS is working!"}
+@app.get("/api-info")
+async def api_info():
+    return {
+        "name": "Nexus AI Music Studio API",
+        "version": "2.6.0",
+        "endpoints": ["/ai/chords", "/ai/melody", "/ai/lyrics", "/ai/lesson", "/ai/status"],
+    }
