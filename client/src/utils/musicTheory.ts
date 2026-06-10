@@ -38,3 +38,7 @@ export function getIntervalName(semitones: number): string {
   };
   return names[semitones % 12] || `${semitones}st`;
 }
+
+export function isBlackKey(note: string): boolean {
+  return note.includes('#') || ['Db', 'Eb', 'Gb', 'Ab', 'Bb'].includes(note);
+}
