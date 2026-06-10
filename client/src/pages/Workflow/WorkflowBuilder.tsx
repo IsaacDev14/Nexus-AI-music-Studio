@@ -370,7 +370,7 @@ const WorkflowBuilder: React.FC = () => {
                           onClick={() => navigate('/builder/generate')}
                           className="px-12 py-4 bg-linear-to-r from-indigo-600 to-purple-600 text-white text-lg font-bold rounded-xl hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                         >
-                          Continue <span aria-hidden="true">→</span>
+                          Continue
                         </button>
                       </div>
                     )}
