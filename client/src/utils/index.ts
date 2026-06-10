@@ -16,3 +16,4 @@ export * from "./storageKeys";
 export * from "./chordNames";
 export * from "./metronomeDefaults";
 export * from "./jamHistory";
+export * from './version';
