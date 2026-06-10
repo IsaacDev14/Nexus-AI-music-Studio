@@ -242,3 +242,14 @@ export const getPracticeAdvice = aiApi.getPracticeAdvice;
 export const generateLesson = aiApi.generateLesson;
 
 export { api };
+
+export interface AIStatusResult {
+  gemini_available: boolean;
+  grok_available: boolean;
+  status: string;
+}
+
+export const checkAIStatus = async (): Promise<AIStatusResult> => {
+  const res = await api.get<AIStatusResult>('/ai/status');
+  return res.data;
+};
