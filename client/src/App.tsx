@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './components/Layout/AppLayout';
 import InstrumentProvider from './context/InstrumentProvider';
 import WorkflowBuilder from './pages/Workflow/WorkflowBuilder';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
 import { NAVIGATION_PATHS } from './utils/constants';
 
@@ -20,13 +21,13 @@ import JamHistory from './pages/Tools/JamHistory';
 import PracticeLog from './pages/Tools/PracticeLog';
 import { Achievements, DataExport, Shortcuts } from './pages/Tools/GenericPages';
 
-export default function App() {
+function AppRoutes() {
+  useKeyboardShortcuts();
+
   return (
-    <InstrumentProvider>
-      <AppLayout>
         <Routes>
-          {/* Default redirect to workflow */}
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path={NAVIGATION_PATHS['Dashboard']} element={<Dashboard />} />
 
           {/* Workflow Builder with steps */}
           <Route path="/builder/:step" element={<WorkflowBuilder />} />
@@ -48,9 +49,16 @@ export default function App() {
           <Route path={NAVIGATION_PATHS['Data Export']} element={<DataExport />} />
           <Route path={NAVIGATION_PATHS['Drifting Shortcuts']} element={<Shortcuts />} />
 
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/builder/skill-level" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <InstrumentProvider>
+      <AppLayout>
+        <AppRoutes />
       </AppLayout>
     </InstrumentProvider>
   );
