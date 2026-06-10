@@ -133,7 +133,7 @@ uvicorn app.main:app --reload
 
 ```env
 REACT_APP_API_KEY=your_gemini_api_key_here
-GROK_API_KEY=your_grok_api_key_here
+GROK_API_KEY=your_grok_api_key_here  # Primary AI provider
 DATABASE_URL=postgresql://username:password@localhost/db_name
 ```
 
