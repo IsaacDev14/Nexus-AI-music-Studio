@@ -14,3 +14,4 @@ export * from "./copyToClipboard";
 export * from "./audioContext";
 export * from "./storageKeys";
 export * from "./chordNames";
+export * from "./metronomeDefaults";
