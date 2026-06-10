@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { generateLyrics } from '../../api/apiService';
 import { PencilSquareIcon, SparklesIcon, DocumentTextIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import ErrorBanner from '../../components/UI/ErrorBanner';
 
 const Songwriter: React.FC = () => {
   const [topic, setTopic] = useState('');
@@ -8,13 +9,20 @@ const Songwriter: React.FC = () => {
   const [mood, setMood] = useState('Happy');
   const [lyrics, setLyrics] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleGenerate = async () => {
     if (!topic) return;
     setLoading(true);
-    const result = await generateLyrics(topic, genre, mood);
-    setLyrics(result);
-    setLoading(false);
+    setError('');
+    try {
+      const result = await generateLyrics(topic, genre, mood);
+      setLyrics(result);
+    } catch {
+      setError('Failed to generate lyrics. Check that the backend is running.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,6 +40,7 @@ const Songwriter: React.FC = () => {
         </div>
 
         <div className="space-y-6 flex-1">
+          {error && <ErrorBanner message={error} onDismiss={() => setError('')} />}
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Genre / Style</label>
             <select 
