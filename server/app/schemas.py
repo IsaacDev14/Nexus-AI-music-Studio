@@ -1,6 +1,6 @@
 # server/app/schemas.py
 from pydantic import BaseModel, Field
-from typing import List, Optional, Union, Literal
+from typing import List, Optional, Union, Literal, Any
 
 # --- Tablature ---
 class TabLine(BaseModel):
@@ -32,6 +32,9 @@ class ChordProgressionRequest(BaseModel):
     helpPractice: bool = True
     showSubstitutions: bool = True
     instrument: Literal["Guitar", "Ukulele", "Piano"] = "Guitar"
+    key: Optional[str] = None
+    artist: Optional[str] = None
+    includeLyrics: Optional[bool] = None
 
 class FullSongArrangement(BaseModel):
     songTitle: str
@@ -67,41 +70,53 @@ class BackingTrackResult(BaseModel):
 
 # --- Rhythm ---
 class RhythmPatternResult(BaseModel):
-    name: str
-    timeSignature: str
-    description: str
-    pattern: List[dict]
+    pattern: str
+    description: Optional[str] = ""
+    difficulty: Optional[str] = ""
+    timeSignature: Optional[str] = ""
+    name: Optional[str] = ""
 
 # --- Melody ---
 class MelodySuggestionResult(BaseModel):
-    scale: str
-    key: str
-    notes: List[str]
-    intervals: List[str]
-    suggestion: str
+    melody: str
+    description: Optional[str] = ""
+    style: Optional[str] = ""
+    key: Optional[str] = ""
+    scale: Optional[str] = ""
+    notes: Optional[List[str]] = None
 
 # --- Improv ---
 class ImprovTipsResult(BaseModel):
-    style: str
-    recommendedScales: List[str]
-    tips: List[str]
-    backingTrackSearch: str
+    response: str
+    scales: Optional[List[str]] = None
+    targetNotes: Optional[List[str]] = None
+    techniques: Optional[List[str]] = None
+    style: Optional[str] = None
+    backingTrackSearch: Optional[str] = None
 
 # --- Lyrics ---
 class LyricsResult(BaseModel):
-    title: str
-    structure: List[str]
     lyrics: str
+    title: Optional[str] = "Untitled"
+    structure: Optional[str] = ""
 
 # --- Practice Advice ---
 class PracticeAdviceResult(BaseModel):
-    insight: str
-    recommendation: str
-    focusArea: str
+    advice: str
+    insights: Optional[List[str]] = None
+    nextGoals: Optional[List[str]] = None
+    focusArea: Optional[str] = None
+    recommendation: Optional[str] = None
 
 # --- Lesson ---
 class LessonResult(BaseModel):
     title: str
     lesson: str
-    duration: str
-    goals: List[str]
+    duration: str = "30 minutes"
+    goals: List[str] = Field(default_factory=list)
+
+# --- Health ---
+class AIStatusResult(BaseModel):
+    gemini_available: bool
+    grok_available: bool
+    status: str
