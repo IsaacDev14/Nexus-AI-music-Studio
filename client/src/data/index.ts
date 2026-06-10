@@ -6,3 +6,4 @@ export * from "./skillLevels";
 export * from "./lessonFocus";
 export * from "./melodyStyles";
 export * from "./rhythmLevels";
+export * from "./waveforms";
