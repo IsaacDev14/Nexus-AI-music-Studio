@@ -27,11 +27,11 @@ app.include_router(ai.router)
 # --- YOUR PRINT STATEMENTS ---
 @app.on_event("startup")
 async def startup_event():
-    print("🚀 FastAPI app is starting up...")
+    print("FastAPI app is starting up...")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    print("🛑 FastAPI app is shutting down...")
+    print("FastAPI app is shutting down...")
 
 @app.get("/")
 async def root():
