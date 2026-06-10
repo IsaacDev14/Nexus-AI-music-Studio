@@ -10,3 +10,4 @@ export * from "./capitalize";
 export * from "./truncate";
 export * from "./bpmConstants";
 export * from "./tunerConstants";
+export * from "./copyToClipboard";
