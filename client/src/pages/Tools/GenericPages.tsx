@@ -441,7 +441,6 @@ export const Shortcuts: React.FC = () => (
             { key: 'P', action: 'Open Practice Log' },
             { key: 'H', action: 'Go to Dashboard' },
             { key: 'R', action: 'Quick Record Toggle' },
-            { key: 'M', action: 'Mute All Audio' },
          ].map((s, i) => (
             <div key={i} className="flex items-center justify-between p-5 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors group">
                <div className="text-gray-700 font-medium flex items-center gap-3">
@@ -458,5 +457,4 @@ export const Shortcuts: React.FC = () => (
          ))}
       </div>
    </div>
-   );
-};
+);
