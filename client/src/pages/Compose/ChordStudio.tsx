@@ -262,7 +262,7 @@ const ChordBox: React.FC<{ chord: string; instrument: Instrument; isAnimating?: 
      return (
         <div className={`flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-gray-200 shadow-sm min-w-[100px] h-[140px] ${isAnimating ? 'animate-pulse' : ''}`}>
            <span className="font-bold text-gray-900 mb-2 text-sm">{chord}</span>
-           <span className="text-4xl">🎹</span>
+           <MusicalNoteIcon className="w-8 h-8 text-gray-400" />
            <span className="text-[10px] text-gray-400 mt-2">Piano Voicing</span>
         </div>
      );
