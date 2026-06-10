@@ -67,13 +67,28 @@ class GrokService:
         cleaned = re.sub(r"^```json\s*", "", text.strip())
         cleaned = re.sub(r"^```\s*", "", cleaned)
         cleaned = re.sub(r"\s*```$", "", cleaned)
-        match = re.search(r"\{(?:[^{}]|(?:\{[^{}]*\}))*\}", cleaned, re.DOTALL)
-        if not match:
-            return None
+
         try:
-            return json.loads(match.group(0))
+            return json.loads(cleaned)
         except json.JSONDecodeError:
+            pass
+
+        # Find the outermost JSON object by matching braces from the start
+        start = cleaned.find("{")
+        if start == -1:
             return None
+        depth = 0
+        for i, ch in enumerate(cleaned[start:], start):
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        return json.loads(cleaned[start : i + 1])
+                    except json.JSONDecodeError:
+                        break
+        return None
 
     async def generate_song_arrangement(self, request):
         if not self.available:

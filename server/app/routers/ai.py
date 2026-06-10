@@ -9,6 +9,7 @@ from app.api.response_normalizers import (
     normalize_lyrics,
     normalize_practice_advice,
     normalize_lesson,
+    normalize_song_arrangement,
 )
 from app.schemas import (
     ChordProgressionRequest,
@@ -59,13 +60,14 @@ async def ai_status():
 @router.post("/chords", response_model=FullSongArrangement)
 async def generate_song_arrangement(request: ChordProgressionRequest):
     async def gemini_call(req):
-        return await gemini_music_service.generateSongArrangement(req)
+        result = await gemini_music_service.generateSongArrangement(req)
+        return normalize_song_arrangement(result)
 
-    return await _try_ai_providers(
-        gemini_call,
-        grok_service.generate_song_arrangement,
-        request
-    )
+    async def grok_call(req):
+        result = await grok_service.generate_song_arrangement(req)
+        return normalize_song_arrangement(result)
+
+    return await _try_ai_providers(gemini_call, grok_call, request)
 
 
 @router.post("/backing-track", response_model=BackingTrackResult)

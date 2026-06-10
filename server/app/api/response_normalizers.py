@@ -2,6 +2,35 @@
 from typing import Any
 
 
+def normalize_song_arrangement(data: dict) -> dict:
+    subs = data.get("substitutions", [])
+    normalized_subs = []
+    for sub in subs if isinstance(subs, list) else []:
+        if isinstance(sub, dict):
+            normalized_subs.append({
+                "originalChord": sub.get("originalChord", ""),
+                "substitutedChord": sub.get("substitutedChord", ""),
+                "theory": sub.get("theory", ""),
+            })
+        elif isinstance(sub, str):
+            normalized_subs.append({
+                "originalChord": "",
+                "substitutedChord": "",
+                "theory": sub,
+            })
+
+    tips = data.get("practiceTips", [])
+    if not isinstance(tips, list):
+        tips = [str(tips)] if tips else []
+
+    return {
+        **data,
+        "substitutions": normalized_subs,
+        "practiceTips": tips,
+        "capoFret": data.get("capoFret", 0) or 0,
+    }
+
+
 def normalize_rhythm(data: dict, time_sig: str = "4/4", level: str = "Beginner") -> dict:
     if isinstance(data.get("pattern"), str):
         return {
