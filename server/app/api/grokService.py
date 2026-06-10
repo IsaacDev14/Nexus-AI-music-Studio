@@ -4,10 +4,10 @@ import re
 import os
 import asyncio
 from dotenv import load_dotenv
-from app.config import GROK_MODELS
+from app.config import GROK_MODELS, GROQ_MODELS
 
 load_dotenv()
-GROK_API_KEY = os.getenv("GROK_API_KEY")
+GROK_API_KEY = os.getenv("GROK_API_KEY") or os.getenv("GROQ_API_KEY")
 
 
 class GrokService:
@@ -15,11 +15,20 @@ class GrokService:
         self.api_key = GROK_API_KEY
         self.headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else None
         self.available = bool(self.headers)
-        self.models = GROK_MODELS
+        self.is_groq = bool(self.api_key and self.api_key.startswith("gsk_"))
+        self.api_url = (
+            "https://api.groq.com/openai/v1/chat/completions"
+            if self.is_groq
+            else "https://api.x.ai/v1/chat/completions"
+        )
+        self.models = GROQ_MODELS if self.is_groq else GROK_MODELS
+        provider = "Groq" if self.is_groq else "xAI Grok"
+        if self.available:
+            print(f"AI fallback service initialized ({provider})")
 
     async def _call_grok(self, prompt: str, max_tokens: int = 3000):
         if not self.headers:
-            raise Exception("GROK_API_KEY missing")
+            raise Exception("GROK_API_KEY or GROQ_API_KEY missing")
 
         last_error = None
         for model in self.models:
@@ -33,7 +42,7 @@ class GrokService:
             try:
                 async with httpx.AsyncClient(timeout=90.0) as client:
                     resp = await client.post(
-                        "https://api.x.ai/v1/chat/completions",
+                        self.api_url,
                         json=payload,
                         headers=self.headers,
                     )
