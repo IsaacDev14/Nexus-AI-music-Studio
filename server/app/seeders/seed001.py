@@ -116,7 +116,7 @@ def seed_data():
 
     except Exception as e:
         db.rollback()
-        print("❌ Error seeding data:", e)
+        print("Error seeding data:", e)
     finally:
         db.close()
 
