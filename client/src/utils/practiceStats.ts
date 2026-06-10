@@ -106,3 +106,24 @@ export function getAverageSessionDuration(sessions: PracticeSession[]): number {
   if (sessions.length === 0) return 0;
   return Math.round(getTotalPracticeMinutes(sessions) / sessions.length);
 }
+
+export function getLongestStreak(sessions: PracticeSession[]): number {
+  if (sessions.length === 0) return 0;
+  const dates = [...new Set(sessions.map((s) => new Date(s.date).toDateString()))].sort(
+    (a, b) => new Date(a).getTime() - new Date(b).getTime()
+  );
+  let max = 1;
+  let current = 1;
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i - 1]);
+    const curr = new Date(dates[i]);
+    const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    if (diff === 1) {
+      current++;
+      max = Math.max(max, current);
+    } else {
+      current = 1;
+    }
+  }
+  return max;
+}
