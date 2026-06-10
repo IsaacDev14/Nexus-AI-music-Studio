@@ -40,7 +40,7 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "message": "API is running successfully"}
+    return {"status": "healthy", "message": "API is running successfully", "version": "2.6.0"}
 
 @app.get("/test-cors")
 async def test_cors():
