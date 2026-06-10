@@ -21,8 +21,8 @@ export function useKeyboardShortcuts() {
       if (e.key === 'p' || e.key === 'P') {
         navigate(NAVIGATION_PATHS['Practice Log']);
       }
-      if (e.key === 'h' || e.key === 'H') {
-        navigate(NAVIGATION_PATHS['Dashboard']);
+      if (e.key === 'a' || e.key === 'A') {
+        navigate(NAVIGATION_PATHS['Track Analyzer']);
       }
     };
 
